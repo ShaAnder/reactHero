@@ -1,10 +1,15 @@
 // src/constants/playerConfig.js
 
-// Player starting position (centered in an open tile)
+// Where the player starts on the map (try to put them in an open space!)
 export const PLAYER_START_X = 300;
 export const PLAYER_START_Y = 300;
 
-// Player visual and movement settings
+// How big the player dot is on the minimap
 export const PLAYER_RADIUS = 5;
-export const PLAYER_SPEED = 180; // units per second (for deltaTime-based movement)
-export const PLAYER_ROTATION_SPEED = 3 * (Math.PI / 180); // radians per frame or per second (adjust as needed)
+
+// How fast the player moves (pixels per second, so works well with deltaTime)
+export const PLAYER_SPEED = 180;
+
+// How fast the player turns (in radians per second)
+// 3 degrees per frame, converted to radians (because JS trig uses radians)
+export const PLAYER_ROTATION_SPEED = 3 * (Math.PI / 180);

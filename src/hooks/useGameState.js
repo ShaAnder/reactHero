@@ -7,15 +7,17 @@ import {
 } from "../constants/playerConfig";
 
 export const useGameState = () => {
+  // Player state: position, angle, speed, etc.
   const [player, setPlayer] = useState({
     x: PLAYER_START_X,
     y: PLAYER_START_Y,
-    // Facing east initially
+    // Player starts facing east (angle 0)
     angle: 0,
     moveSpeed: PLAYER_SPEED,
     rotationSpeed: PLAYER_ROTATION_SPEED,
   });
 
+  // Tracks which keys are currently held down
   const keys = useRef({
     up: false,
     down: false,
@@ -23,6 +25,7 @@ export const useGameState = () => {
     right: false,
   });
 
+  // When a movement key is pressed, update the keys ref
   const handleKeyDown = useCallback(
     (e) => {
       let logged = false;
@@ -51,8 +54,8 @@ export const useGameState = () => {
           break;
       }
       if (logged) {
-        // Log the current player state
-        // (player state may be one frame behind, but this is usually fine for debugging)
+        // Log player info when a movement key is pressed
+        // (player state might be a frame behind, but good enough for debugging)
         console.log(
           "KeyDown:",
           e.key,
@@ -67,6 +70,7 @@ export const useGameState = () => {
     [player]
   );
 
+  // When a movement key is released, update the keys ref
   const handleKeyUp = useCallback((e) => {
     switch (e.key) {
       case "ArrowUp":
@@ -90,23 +94,26 @@ export const useGameState = () => {
     }
   }, []);
 
+  // Set up global key listeners when the component mounts
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
+    // Clean up listeners when unmounting
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  // This runs every frame from the game loop
   const updateGameState = useCallback((deltaTime) => {
     setPlayer((prevPlayer) => {
       let newX = prevPlayer.x;
       let newY = prevPlayer.y;
       let newAngle = prevPlayer.angle;
 
-      // Handle rotation using our deltatime
+      // Handle rotation (left/right keys)
       if (keys.current.left) {
         newAngle -= prevPlayer.rotationSpeed * deltaTime;
       }
@@ -114,7 +121,11 @@ export const useGameState = () => {
         newAngle += prevPlayer.rotationSpeed * deltaTime;
       }
 
-      // We handle movement by using trig
+      // Move forward/backward using trig
+      // Math note:
+      //   To move in the direction the player is facing, use cosine for x and sine for y.
+      //   This way, movement is always relative to the player's angle, not just the grid.
+      //   Multiply by moveSpeed and deltaTime so it works the same at any frame rate.
       if (keys.current.up) {
         newX += Math.cos(newAngle) * prevPlayer.moveSpeed * deltaTime;
         newY += Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
@@ -124,7 +135,7 @@ export const useGameState = () => {
         newY -= Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
       }
 
-      // collision detection will go here
+      // TODO: Add collision detection here
 
       return {
         ...prevPlayer,
@@ -135,6 +146,7 @@ export const useGameState = () => {
     });
   }, []);
 
+  // Return player state and the update function for the game loop to use
   return {
     player,
     updateGameState,

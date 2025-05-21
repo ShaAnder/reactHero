@@ -1,23 +1,25 @@
 import React, { useRef, useEffect } from "react";
 
-// Learning how to do a frameloop thanks to
-// https://gist.github.com/balmacefa/3e899642ae96eeb78e76d015d9587397
+// A handy hook for running a callback every animation frame (like a mini game loop!)
 export const useFrameLoop = (callback) => {
-  const requestID = useRef;
-  const preeviousTime = useRef();
+  const requestID = useRef(); // Holds the ID for requestAnimationFrame so we can cancel it
+  const previousTime = useRef(); // Stores the timestamp of the last frame
 
+  // This function runs every frame
   const loop = (time) => {
-    if (preeviousTime.current !== undefined) {
-      const deltaTime = time - preeviousTime.current;
-      callback(time, deltaTime);
+    if (previousTime.current !== undefined) {
+      // Figure out how much time has passed since the last frame
+      const deltaTime = time - previousTime.current;
+      callback(time, deltaTime); // Call your function with both timestamps
     }
-
-    preeviousTime.current = time;
-    requestID.current = requestAnimationFrame(loop);
+    previousTime.current = time; // Update for the next frame
+    requestID.current = requestAnimationFrame(loop); // Keep the loop going
   };
 
   useEffect(() => {
+    // Start the loop when the component mounts
     requestID.current = requestAnimationFrame(loop);
+    // Clean up the loop if the component unmounts
     return () => cancelAnimationFrame(requestID.current);
   }, []);
 };

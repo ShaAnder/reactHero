@@ -2,15 +2,16 @@ import { TILE_SIZE, MAP_NUM_ROWS, MAP_NUM_COLS } from "../constants/gameConfig";
 import { MAP } from "../constants/map";
 
 export const renderMinimap = (context, player) => {
-  // Clear the canvas
+  // Paint the whole canvas black to clear previous frame
   context.fillStyle = "black";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
-  // Draw the minimap
+  // Draw each tile of the minimap
   for (let row = 0; row < MAP_NUM_ROWS; row++) {
     for (let col = 0; col < MAP_NUM_COLS; col++) {
-      const tileX = col * TILE_SIZE;
-      const tileY = row * TILE_SIZE;
+      const tileX = col * TILE_SIZE; // Where this tile starts (left)
+      const tileY = row * TILE_SIZE; // Where this tile starts (top)
+      // Walls are dark, open space is white
       const tileColor = MAP[row][col] === 1 ? "#222" : "#fff";
 
       context.fillStyle = tileColor;
@@ -18,13 +19,17 @@ export const renderMinimap = (context, player) => {
     }
   }
 
-  // Draw the player
+  // Draw the player as a red dot
   context.fillStyle = "red";
   context.beginPath();
   context.arc(player.x, player.y, 5, 0, Math.PI * 2);
   context.fill();
 
-  // Draw player direction line
+  // Draw a line showing which way the player is facing
+  // Math explanation:
+  //   To show the direction, we use the player's angle and draw a line 20 pixels long.
+  //   cos(angle) gives us the x direction, sin(angle) gives us the y direction.
+  //   So, the line starts at the player and points "forward" based on their angle.
   context.strokeStyle = "red";
   context.beginPath();
   context.moveTo(player.x, player.y);
@@ -36,7 +41,7 @@ export const renderMinimap = (context, player) => {
 };
 
 export const renderRaycaster = (context, player) => {
-  // Implementation of the raycaster rendering will go here
-  // for now just log it
+  // This is where the 3D magic will happen later!
+  // For now, just logging so we know it's being called
   console.log(context, player);
 };

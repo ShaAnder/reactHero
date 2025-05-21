@@ -6,29 +6,29 @@ import { renderMinimap, renderRaycaster } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {
-  const canvasRef = useRef(null);
-  const { player, updateGameState } = useGameState();
-  const [showFps, setShowFps] = useState(true);
+  const canvasRef = useRef(null); // We'll use this to grab the canvas DOM node
+  const { player, updateGameState } = useGameState(); // Handles player movement and state
+  const [showFps, setShowFps] = useState(true); // Toggle FPS counter
 
-  // Set up rendering function
+  // This function draws everything each frame
   const render = (deltaTime) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) return; // Bail if canvas isn't ready
 
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
-    // Clear the canvas
+    // Wipe the canvas clean before drawing
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Render the game
+    // Draw the minimap and (eventually) the 3D view
     renderMinimap(context, player);
     renderRaycaster(context, player);
   };
 
-  // Use our game loop
+  // This hook keeps the game loop running and returns the FPS
   const fps = useGameLoop(updateGameState, render);
 
-  // Get reference to the canvas element
+  // Grab the actual canvas element from the DOM after it mounts
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = document.querySelector("canvas");
@@ -46,6 +46,7 @@ function App() {
         height: "100vh",
       }}
     >
+      {/* The main game canvas */}
       <Canvas
         width={WINDOW_WIDTH}
         height={WINDOW_HEIGHT}
@@ -53,6 +54,7 @@ function App() {
           border: "1px solid black",
         }}
       />
+      {/* Show FPS in the corner if enabled */}
       {showFps && (
         <div
           style={{

@@ -23,28 +23,49 @@ export const useGameState = () => {
     right: false,
   });
 
-  const handleKeyDown = useCallback((e) => {
-    switch (e.key) {
-      case "ArrowUp":
-      case "w":
-        keys.current.up = true;
-        break;
-      case "ArrowDown":
-      case "s":
-        keys.current.down = true;
-        break;
-      case "ArrowLeft":
-      case "a":
-        keys.current.left = true;
-        break;
-      case "ArrowRight":
-      case "d":
-        keys.current.right = true;
-        break;
-      default:
-        break;
-    }
-  }, []);
+  const handleKeyDown = useCallback(
+    (e) => {
+      let logged = false;
+      switch (e.key) {
+        case "ArrowUp":
+        case "w":
+          keys.current.up = true;
+          logged = true;
+          break;
+        case "ArrowDown":
+        case "s":
+          keys.current.down = true;
+          logged = true;
+          break;
+        case "ArrowLeft":
+        case "a":
+          keys.current.left = true;
+          logged = true;
+          break;
+        case "ArrowRight":
+        case "d":
+          keys.current.right = true;
+          logged = true;
+          break;
+        default:
+          break;
+      }
+      if (logged) {
+        // Log the current player state
+        // (player state may be one frame behind, but this is usually fine for debugging)
+        console.log(
+          "KeyDown:",
+          e.key,
+          "Player position:",
+          player.x,
+          player.y,
+          "Angle:",
+          player.angle
+        );
+      }
+    },
+    [player]
+  );
 
   const handleKeyUp = useCallback((e) => {
     switch (e.key) {
@@ -103,7 +124,7 @@ export const useGameState = () => {
         newY -= Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
       }
 
-      // Collision detection here later
+      // collision detection will go here
 
       return {
         ...prevPlayer,

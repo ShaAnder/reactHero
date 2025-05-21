@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import Canvas from "./components/canvas/Canvas";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { useGameState } from "./hooks/useGameState";
-import { renderMinimap, renderRaycaster } from "./utils/renderer";
+import { renderMinimap, renderRaycaster } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {

@@ -1,10 +1,17 @@
-import useCanvas from "../../hooks/useCanvas";
+// components/canvas/Canvas.jsx
+import { useRef, useEffect } from "react";
 
-const Canvas = (props) => {
-  const { draw, ...rest } = props;
-  const ref = useCanvas(draw);
+const Canvas = ({ width, height, style }) => {
+  const canvasRef = useRef(null);
 
-  return <canvas ref={ref} {...rest} />;
+  useEffect(() => {
+    // Make sure canvas size is set properly
+    const canvas = canvasRef.current;
+    canvas.width = width;
+    canvas.height = height;
+  }, [width, height]);
+
+  return <canvas ref={canvasRef} style={style} />;
 };
 
 export default Canvas;

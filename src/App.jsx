@@ -1,37 +1,72 @@
-import { useState } from "react";
-import { useFrameLoop } from "./utils/FrameLoop";
+import { useRef, useEffect, useState } from "react";
 import Canvas from "./components/canvas/Canvas";
+import { useGameLoop } from "./hooks/useGameLoop";
+import { useGameState } from "./hooks/useGameState";
+import { renderMinimap, renderRaycaster } from "./utils/renderer";
+import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {
-  const draw = (context, count) => {
-    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    // give it color
-    context.fillstyle = "grey";
-    const delta = count % 1280;
-    // x, y, width, height
-    context.fillRect(10 + delta, 10, 100, 100);
+  const canvasRef = useRef(null);
+  const { player, updateGameState } = useGameState();
+  const [showFps, setShowFps] = useState(true);
+
+  // Set up rendering function
+  const render = (deltaTime) => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Render the game
+    renderMinimap(context, player);
+    renderRaycaster(context, player);
   };
 
+  // Use our game loop
+  const fps = useGameLoop(updateGameState, render);
+
+  // Get reference to the canvas element
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = document.querySelector("canvas");
+      canvasRef.current = canvas;
+    }
+  }, []);
+
   return (
-    <>
-      <div
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}
+    >
+      <Canvas
+        width={WINDOW_WIDTH}
+        height={WINDOW_HEIGHT}
         style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
+          border: "1px solid black",
         }}
-      >
-        <Canvas
-          draw={draw}
-          width="1280"
-          height="720"
+      />
+      {showFps && (
+        <div
           style={{
-            border: "1px solid black",
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            color: "white",
           }}
-        />
-      </div>
-    </>
+        >
+          FPS: {fps}
+        </div>
+      )}
+    </div>
   );
 }
+
 export default App;

@@ -1,39 +1,37 @@
-import "./App.css";
-
 import { useState } from "react";
 import { useFrameLoop } from "./utils/FrameLoop";
+import Canvas from "./components/canvas/Canvas";
 
 function App() {
-  const [time, setTime] = useState(0);
-  const [deltaTime, setDeltaTime] = useState(0);
-  const [color, setColor] = useState("");
+  const draw = (context, count) => {
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    // give it color
+    context.fillstyle = "grey";
+    const delta = count % 1280;
+    // x, y, width, height
+    context.fillRect(10 + delta, 10, 100, 100);
+  };
 
-  let nextColor = -1;
-  useFrameLoop((time, deltaTime) => {
-    // logic
-
-    if (time > nextColor) {
-      nextColor = time + 2000;
-
-      //https://dev.to/akhil_001/generating-random-color-with-single-line-of-js-code-fhj
-      setColor("#" + Math.floor(Math.random() * 16777215).toString(16));
-    }
-    setTime(time);
-    setDeltaTime(deltaTime);
-  });
   return (
     <>
-      <div className="App">
-        <header className="App-Header" style={{ background: color }}>
-          <div>Reactenstein</div>
-          <p>Time:</p>
-          <p>{time}</p>
-          <p>DeltaTime:</p>
-          <p>{deltaTime}</p>
-        </header>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Canvas
+          draw={draw}
+          width="1280"
+          height="720"
+          style={{
+            border: "1px solid black",
+          }}
+        />
       </div>
     </>
   );
 }
-
 export default App;

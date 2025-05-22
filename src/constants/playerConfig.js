@@ -12,4 +12,4 @@ export const PLAYER_SPEED = 180;
 
 // How fast the player turns (in radians per second)
 // 3 degrees per frame, converted to radians (because JS trig uses radians)
-export const PLAYER_ROTATION_SPEED = 3 * (Math.PI / 180);
+export const PLAYER_ROTATION_SPEED = 500 * (Math.PI / 180);

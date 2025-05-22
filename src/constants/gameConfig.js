@@ -1,7 +1,7 @@
 // Window and tile settings
 export const WINDOW_WIDTH = 1280; // Width of the game window in pixels
 export const WINDOW_HEIGHT = 720; // Height of the game window in pixels
-export const TILE_SIZE = 64; // Each map tile is 64x64 pixels (classic Wolf3D size[2])
+export const TILE_SIZE = 64; // Each map tile is 64x64 pixels (classic Wolf3D size[2]) also can be called map_scale
 
 // Field of view (in radians)
 // 60 degrees is standard FOV for classic raycasting games.

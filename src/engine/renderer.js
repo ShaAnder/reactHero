@@ -1,8 +1,10 @@
 import { TILE_SIZE, MAP_NUM_ROWS, MAP_NUM_COLS } from "../constants/gameConfig";
 import { MAP } from "../constants/map";
+import { rayCaster } from "./raycasting";
 
 export const renderMinimap = (context, player) => {
   // Paint the whole canvas black to clear previous frame
+
   context.fillStyle = "black";
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
@@ -41,7 +43,19 @@ export const renderMinimap = (context, player) => {
 };
 
 export const renderRaycaster = (context, player) => {
-  // This is where the 3D magic will happen later!
-  // For now, just logging so we know it's being called
-  console.log(context, player);
+  const dirX = Math.cos(player.angle);
+  const dirY = Math.sin(player.angle);
+  const fov = 0.66;
+  const planeX = -dirY * fov;
+  const planeY = dirX * fov;
+
+  rayCaster({
+    player,
+    planeX,
+    planeY,
+    screenWidth: context.canvas.width,
+    screenHeight: context.canvas.height,
+    map: MAP,
+    context,
+  });
 };

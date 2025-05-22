@@ -59,6 +59,9 @@ main.jsx;
 - **utils/**: Frame loop and other utilities
 - **App.jsx**: Main entry point for the game logic and rendering
 
+As well as this expect way too many comments, one of the core learning points for this was to learn the math behind raycasting trig in games ect and I am a complete
+novice at this, there will be a math section later so i can explain how it works to the best of my ability but for now here's a warning that it gets comment heavy.
+
 ---
 
 ## 🛠 Tech Stack

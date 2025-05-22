@@ -1,17 +1,15 @@
-import { useRef, useEffect } from "react";
+import { useEffect, forwardRef } from "react";
 
-const Canvas = ({ width, height, style }) => {
-  const canvasRef = useRef(null); // We'll use this to get the actual canvas DOM node
-
+// Forward the ref from parent to the actual canvas DOM element
+const Canvas = forwardRef(({ width, height, style }, ref) => {
   useEffect(() => {
-    // Set the canvas width and height directly so drawing is crisp
-    const canvas = canvasRef.current;
-    canvas.width = width;
-    canvas.height = height;
-  }, [width, height]); // Only run this when width or height changes
+    if (ref?.current) {
+      ref.current.width = width;
+      ref.current.height = height;
+    }
+  }, [width, height, ref]);
 
-  // Render the canvas element and attach our ref
-  return <canvas ref={canvasRef} style={style} />;
-};
+  return <canvas ref={ref} style={style} />;
+});
 
 export default Canvas;

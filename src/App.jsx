@@ -16,7 +16,6 @@ function App() {
 
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-
     // Wipe the canvas clean before drawing
     context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -48,6 +47,7 @@ function App() {
     >
       {/* The main game canvas */}
       <Canvas
+        ref={canvasRef}
         width={WINDOW_WIDTH}
         height={WINDOW_HEIGHT}
         style={{

@@ -135,8 +135,6 @@ export const useGameState = () => {
         newY -= Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
       }
 
-      // TODO: Add collision detection here
-
       return {
         ...prevPlayer,
         x: newX,

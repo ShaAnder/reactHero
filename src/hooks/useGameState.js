@@ -6,7 +6,12 @@ import {
   PLAYER_ROTATION_SPEED,
 } from "../constants/playerConfig";
 
-const MOUSE_SENSITIVITY = 0.002; // Tweak this value for faster/slower mouse turning
+import { isWall } from "../helpers/isWall";
+import { MAP } from "../constants/map";
+
+// Classic Wolf3D FOV (adjust as needed)
+const FOV = 0.66;
+const MOUSE_SENSITIVITY = 0.002;
 
 export const useGameState = () => {
   // Player state: position, angle, speed, etc.
@@ -43,19 +48,15 @@ export const useGameState = () => {
         keys.current.down = true;
         break;
       case "ArrowLeft":
-        // Turn left
         keys.current.left = true;
         break;
       case "ArrowRight":
-        // Turn right
         keys.current.right = true;
         break;
       case "a":
-        // Strafe left
         keys.current.strafeLeft = true;
         break;
       case "d":
-        // Strafe right
         keys.current.strafeRight = true;
         break;
       default:
@@ -133,33 +134,38 @@ export const useGameState = () => {
   // --- Game loop update ---
   const updateGameState = useCallback((deltaTime) => {
     setPlayer((prevPlayer) => {
-      // we get the stats of our prev player angle
       let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 
       // Rotation (arrow keys)
       if (keys.current.left) angle -= rotationSpeed * deltaTime;
       if (keys.current.right) angle += rotationSpeed * deltaTime;
 
-      // Forward/back movement
+      // Calculate intended movement
+      let moveStepX = 0,
+        moveStepY = 0;
       if (keys.current.up) {
-        x += Math.cos(angle) * moveSpeed * deltaTime;
-        y += Math.sin(angle) * moveSpeed * deltaTime;
+        moveStepX += Math.cos(angle) * moveSpeed * deltaTime;
+        moveStepY += Math.sin(angle) * moveSpeed * deltaTime;
       }
       if (keys.current.down) {
-        x -= Math.cos(angle) * moveSpeed * deltaTime;
-        y -= Math.sin(angle) * moveSpeed * deltaTime;
+        moveStepX -= Math.cos(angle) * moveSpeed * deltaTime;
+        moveStepY -= Math.sin(angle) * moveSpeed * deltaTime;
       }
-
-      // Strafing (A/D)
       if (keys.current.strafeLeft) {
-        // Move perpendicular to facing direction (left)
-        x += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
-        y += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
+        moveStepX += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
+        moveStepY += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
       }
       if (keys.current.strafeRight) {
-        // Move perpendicular to facing direction (right)
-        x += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
-        y += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
+        moveStepX += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
+        moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
+      }
+
+      // Try X movement, then Y movement (allows sliding along walls)
+      if (!isWall(x + moveStepX, y, MAP)) {
+        x += moveStepX;
+      }
+      if (!isWall(x, y + moveStepY, MAP)) {
+        y += moveStepY;
       }
 
       // Normalize angle
@@ -170,10 +176,20 @@ export const useGameState = () => {
     });
   }, []);
 
-  // --- Return state, updater, and canvasRef for use in your component ---
+  // --- Camera plane calculation (perpendicular to direction) ---
+  const getCameraPlane = (angle) => ({
+    planeX: -Math.sin(angle) * FOV,
+    planeY: Math.cos(angle) * FOV,
+  });
+
+  const { planeX, planeY } = getCameraPlane(player.angle);
+
+  // --- Return state, updater, camera plane, and canvasRef ---
   return {
     player,
+    planeX,
+    planeY,
     updateGameState,
-    canvasRef, // Use this ref for your <canvas ref={canvasRef} />
+    canvasRef,
   };
 };

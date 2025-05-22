@@ -25,6 +25,7 @@ export const renderRaycaster = (context, player) => {
 };
 
 export const render = (context, player) => {
-  renderMinimap(context, player);
   renderRaycaster(context, player);
+  // we render minimap AFTER we render the space so it stays on top
+  renderMinimap(context, player);
 };

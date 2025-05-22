@@ -104,20 +104,49 @@ export const rayCaster = ({
       }
     }
 
-    // === STEP 6: Draw a debug line from player to wall ===
+    // === STEP 6: Calculate distance to the wall for this ray ===
 
-    // We hit a wall! Now we draw a line from player position to the center of that wall tile.
-    // (Just for visual debug purposes)
-    const hitX = mapX * TILE_SIZE + TILE_SIZE / 2;
-    const hitY = mapY * TILE_SIZE + TILE_SIZE / 2;
+    // We want the "straight-line" distance from the player to the wall, not the
+    // direct ray distance (to avoid the fish-eye effect). So we project
+    // the distance onto the player's viewing direction.
 
-    context.strokeStyle = "rgba(255, 255, 0, 0.3)";
-    context.beginPath();
-    context.moveTo(player.x, player.y);
-    context.lineTo(hitX, hitY);
-    context.stroke();
+    // If we hit a vertical wall (side === 0) (we cross a horizontal tile boundary)
+    let perpWallDist;
+    if (side === 0) {
+      // mapX is the tile index we hit, player.x/TILE_SIZE is the player's tile position (fractional)
+      // (mapX - player.x/TILE_SIZE) is how many tiles from the player to the wall
+      // (1 - stepX) / 2 corrects for which side of the tile we hit (left or right)
+      // Divide by rayDirX to get the actual distance along the ray
+      perpWallDist = (mapX - player.x / TILE_SIZE + (1 - stepX) / 2) / rayDirX;
+    } else {
+      // Same logic for horizontal walls (side === 1) (vertical tile boundary)
+      perpWallDist = (mapY - player.y / TILE_SIZE + (1 - stepY) / 2) / rayDirY;
+    }
 
-    // Later, instead of drawing this debug line, we’ll actually use the wall distance
-    // to draw a vertical strip that simulates depth
+    // Prevent weirdness if the distance is zero or negative (which shouldn't happen, but just in case)
+    if (perpWallDist <= 0) perpWallDist = 0.01;
+
+    // === STEP 7: Calculate the height of the wall slice to draw ===
+
+    // The closer the wall, the taller it should appear. The farther, the shorter.
+    // This formula gives a "perspective" effect: nearby walls are big, far ones are small.
+    const wallHeight = Math.floor(screenHeight / perpWallDist);
+
+    // Calculate where the top and bottom of the wall slice should be on the screen
+    // We want the wall centered vertically, so we start drawing at (screenHeight - wallHeight)/2
+    const wallStart = Math.max(0, Math.floor((screenHeight - wallHeight) / 2));
+    // The bottom is just the top plus the wall height, but don't go below the screen
+    const wallEnd = Math.min(
+      screenHeight,
+      Math.floor((screenHeight + wallHeight) / 2)
+    );
+
+    // === STEP 8: Draw the vertical wall slice for this column ===
+
+    // (side === 0 is a vertical wall, side === 1 is a horizontal wall)
+    context.fillStyle = side === 0 ? "#cccccc" : "#888888"; // Light gray for vertical, dark for horizontal
+
+    // Draw a 1-pixel wide vertical rectangle at column x, from wallStart to wallEnd
+    context.fillRect(x, wallStart, 1, wallEnd - wallStart);
   }
 };

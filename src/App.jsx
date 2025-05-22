@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Canvas from "./components/canvas/Canvas";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { useGameState } from "./hooks/useGameState";
@@ -6,10 +6,8 @@ import { render as gameRender } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {
-  // We'll use this to grab the canvas DOM node
-  const canvasRef = useRef(null);
   // Handles player movement and state
-  const { player, updateGameState } = useGameState();
+  const { player, updateGameState, canvasRef } = useGameState();
   // Toggle FPS counter
   const [showFps, setShowFps] = useState(true);
 

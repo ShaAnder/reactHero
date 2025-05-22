@@ -24,12 +24,14 @@ export const useGameState = () => {
     down: false,
     left: false,
     right: false,
+    strafeLeft: false,
+    strafeRight: false,
   });
 
   // Reference to your canvas for pointer lock
   const canvasRef = useRef(null);
 
-  // --- Keyboard controls (unchanged) ---
+  // --- Keyboard controls ---
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {
       case "ArrowUp":
@@ -41,12 +43,20 @@ export const useGameState = () => {
         keys.current.down = true;
         break;
       case "ArrowLeft":
-      case "a":
+        // Turn left
         keys.current.left = true;
         break;
       case "ArrowRight":
-      case "d":
+        // Turn right
         keys.current.right = true;
+        break;
+      case "a":
+        // Strafe left
+        keys.current.strafeLeft = true;
+        break;
+      case "d":
+        // Strafe right
+        keys.current.strafeRight = true;
         break;
       default:
         break;
@@ -64,12 +74,16 @@ export const useGameState = () => {
         keys.current.down = false;
         break;
       case "ArrowLeft":
-      case "a":
         keys.current.left = false;
         break;
       case "ArrowRight":
-      case "d":
         keys.current.right = false;
+        break;
+      case "a":
+        keys.current.strafeLeft = false;
+        break;
+      case "d":
+        keys.current.strafeRight = false;
         break;
       default:
         break;
@@ -119,38 +133,40 @@ export const useGameState = () => {
   // --- Game loop update ---
   const updateGameState = useCallback((deltaTime) => {
     setPlayer((prevPlayer) => {
-      let newX = prevPlayer.x;
-      let newY = prevPlayer.y;
-      let newAngle = prevPlayer.angle;
+      // we get the stats of our prev player angle
+      let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 
-      // Keyboard rotation (left/right keys)
-      if (keys.current.left) {
-        newAngle -= prevPlayer.rotationSpeed * deltaTime;
-      }
-      if (keys.current.right) {
-        newAngle += prevPlayer.rotationSpeed * deltaTime;
-      }
-
-      // Normalize angle to 0...2π (optional but tidy)
-      if (newAngle < 0) newAngle += Math.PI * 2;
-      if (newAngle >= Math.PI * 2) newAngle -= Math.PI * 2;
+      // Rotation (arrow keys)
+      if (keys.current.left) angle -= rotationSpeed * deltaTime;
+      if (keys.current.right) angle += rotationSpeed * deltaTime;
 
       // Forward/back movement
       if (keys.current.up) {
-        newX += Math.cos(newAngle) * prevPlayer.moveSpeed * deltaTime;
-        newY += Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
+        x += Math.cos(angle) * moveSpeed * deltaTime;
+        y += Math.sin(angle) * moveSpeed * deltaTime;
       }
       if (keys.current.down) {
-        newX -= Math.cos(newAngle) * prevPlayer.moveSpeed * deltaTime;
-        newY -= Math.sin(newAngle) * prevPlayer.moveSpeed * deltaTime;
+        x -= Math.cos(angle) * moveSpeed * deltaTime;
+        y -= Math.sin(angle) * moveSpeed * deltaTime;
       }
 
-      return {
-        ...prevPlayer,
-        x: newX,
-        y: newY,
-        angle: newAngle,
-      };
+      // Strafing (A/D)
+      if (keys.current.strafeLeft) {
+        // Move perpendicular to facing direction (left)
+        x += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
+        y += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
+      }
+      if (keys.current.strafeRight) {
+        // Move perpendicular to facing direction (right)
+        x += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
+        y += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
+      }
+
+      // Normalize angle
+      if (angle < 0) angle += Math.PI * 2;
+      if (angle >= Math.PI * 2) angle -= Math.PI * 2;
+
+      return { ...prevPlayer, x, y, angle };
     });
   }, []);
 

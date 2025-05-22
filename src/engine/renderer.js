@@ -1,5 +1,5 @@
 import { renderMinimap } from "./rendering/miniMapRenderer";
-import { rayCaster } from "./raycasting";
+import { rayCaster } from "./rendering/raycaster";
 
 import { FOV_ANGLE } from "../constants/gameConfig";
 import { MAP } from "../constants/map";

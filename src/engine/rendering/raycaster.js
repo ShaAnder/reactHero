@@ -1,4 +1,4 @@
-import { TILE_SIZE } from "../constants/gameConfig";
+import { TILE_SIZE } from "../../constants/gameConfig";
 
 /**
  * Casts rays from the player’s perspective across the screen using DDA.

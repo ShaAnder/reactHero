@@ -7,7 +7,7 @@ export const TILE_SIZE = 64; // Each map tile is 64x64 pixels (classic Wolf3D si
 // 60 degrees is standard FOV for classic raycasting games.
 // To convert degrees to radians, we multiply by π/180. So 60° becomes (60 * π) / 180.
 // Radians are JS's unit of measurement for measuring angles
-export const FOV_ANGLE = (60 * Math.PI) / 180;
+export const FOV_ANGLE = 0.66;
 
 // Map grid size
 export const MAP_NUM_ROWS = 11; // Number of rows in our map grid

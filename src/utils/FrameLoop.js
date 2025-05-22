@@ -1,19 +1,24 @@
 import React, { useRef, useEffect } from "react";
 
-// A handy hook for running a callback every animation frame (like a mini game loop!)
+// Hook for running callback on every loop
 export const useFrameLoop = (callback) => {
-  const requestID = useRef(); // Holds the ID for requestAnimationFrame so we can cancel it
-  const previousTime = useRef(); // Stores the timestamp of the last frame
+  // Holds the ID for requestAnimationFrame so we can cancel it
+  const requestID = useRef();
+  // Stores the timestamp of the last frame
+  const previousTime = useRef();
 
   // This function runs every frame
   const loop = (time) => {
     if (previousTime.current !== undefined) {
       // Figure out how much time has passed since the last frame
       const deltaTime = time - previousTime.current;
-      callback(time, deltaTime); // Call your function with both timestamps
+      // Call function with timestamps
+      callback(time, deltaTime);
     }
-    previousTime.current = time; // Update for the next frame
-    requestID.current = requestAnimationFrame(loop); // Keep the loop going
+    // Update for the next frame
+    previousTime.current = time;
+    // Keep the loop going
+    requestID.current = requestAnimationFrame(loop);
   };
 
   useEffect(() => {

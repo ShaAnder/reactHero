@@ -118,6 +118,6 @@ export const rayCaster = ({
     context.stroke();
 
     // Later, instead of drawing this debug line, we’ll actually use the wall distance
-    // to draw a vertical strip that simulates depth — like Wolfenstein or DOOM!
+    // to draw a vertical strip that simulates depth
   }
 };

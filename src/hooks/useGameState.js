@@ -26,49 +26,32 @@ export const useGameState = () => {
   });
 
   // When a movement key is pressed, update the keys ref
-  const handleKeyDown = useCallback(
-    (e) => {
-      let logged = false;
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-          keys.current.up = true;
-          logged = true;
-          break;
-        case "ArrowDown":
-        case "s":
-          keys.current.down = true;
-          logged = true;
-          break;
-        case "ArrowLeft":
-        case "a":
-          keys.current.left = true;
-          logged = true;
-          break;
-        case "ArrowRight":
-        case "d":
-          keys.current.right = true;
-          logged = true;
-          break;
-        default:
-          break;
-      }
-      if (logged) {
-        // Log player info when a movement key is pressed
-        // (player state might be a frame behind, but good enough for debugging)
-        console.log(
-          "KeyDown:",
-          e.key,
-          "Player position:",
-          player.x,
-          player.y,
-          "Angle:",
-          player.angle
-        );
-      }
-    },
-    [player]
-  );
+  const handleKeyDown = useCallback((e) => {
+    switch (e.key) {
+      case "ArrowUp":
+      case "w":
+        keys.current.up = true;
+
+        break;
+      case "ArrowDown":
+      case "s":
+        keys.current.down = true;
+
+        break;
+      case "ArrowLeft":
+      case "a":
+        keys.current.left = true;
+
+        break;
+      case "ArrowRight":
+      case "d":
+        keys.current.right = true;
+
+        break;
+      default:
+        break;
+    }
+  }, []);
 
   // When a movement key is released, update the keys ref
   const handleKeyUp = useCallback((e) => {

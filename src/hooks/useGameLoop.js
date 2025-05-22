@@ -2,11 +2,16 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 
 export const useGameLoop = (updateCallback, renderCallback) => {
-  const [fps, setFps] = useState(0); // We'll display this in the UI
-  const requestIdRef = useRef(null); // Holds the animation frame ID
-  const previousTimeRef = useRef(0); // Last frame's timestamp
-  const fpsCounterRef = useRef(0); // Counts frames for FPS
-  const lastFpsUpdateRef = useRef(0); // When we last updated FPS
+  // Set UI FPS
+  const [fps, setFps] = useState(0);
+  // Holds the animation frame ID
+  const requestIdRef = useRef(null);
+  // Last frame's timestamp
+  const previousTimeRef = useRef(0);
+  // Counts frames for FPS
+  const fpsCounterRef = useRef(0);
+  // When we last updated FPS
+  const lastFpsUpdateRef = useRef(0);
 
   // This is our main loop, runs every frame
   const loop = useCallback(
@@ -55,6 +60,6 @@ export const useGameLoop = (updateCallback, renderCallback) => {
       cancelAnimationFrame(requestIdRef.current);
     };
   }, [loop]);
-
-  return fps; // Return the current FPS so you can show it in your UI
+  // Return the current FPS so we can display on ui/canvas
+  return fps;
 };

@@ -2,17 +2,21 @@ import { useRef, useEffect, useState } from "react";
 import Canvas from "./components/canvas/Canvas";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { useGameState } from "./hooks/useGameState";
-import { renderMinimap, renderRaycaster } from "./engine/renderer";
+import { render as gameRender } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {
-  const canvasRef = useRef(null); // We'll use this to grab the canvas DOM node
-  const { player, updateGameState } = useGameState(); // Handles player movement and state
-  const [showFps, setShowFps] = useState(true); // Toggle FPS counter
+  // We'll use this to grab the canvas DOM node
+  const canvasRef = useRef(null);
+  // Handles player movement and state
+  const { player, updateGameState } = useGameState();
+  // Toggle FPS counter
+  const [showFps, setShowFps] = useState(true);
 
   // This function draws everything each frame
   const render = (deltaTime) => {
-    if (!canvasRef.current) return; // Bail if canvas isn't ready
+    // Bail if canvas isn't ready
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -20,8 +24,7 @@ function App() {
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw the minimap and (eventually) the 3D view
-    renderMinimap(context, player);
-    renderRaycaster(context, player);
+    gameRender(context, player);
   };
 
   // This hook keeps the game loop running and returns the FPS

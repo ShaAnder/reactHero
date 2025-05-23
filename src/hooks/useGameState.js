@@ -6,7 +6,7 @@ import {
   PLAYER_ROTATION_SPEED,
 } from "../constants/playerConfig";
 
-import { isWall } from "../helpers/isWall";
+import { getIsWall } from "../helpers/getIsWall";
 import { MAP } from "../constants/map";
 
 // Classic Wolf3D FOV (adjust as needed)
@@ -161,10 +161,10 @@ export const useGameState = () => {
       }
 
       // Try X movement, then Y movement (allows sliding along walls)
-      if (!isWall(x + moveStepX, y, MAP)) {
+      if (!getIsWall(x + moveStepX, y, MAP)) {
         x += moveStepX;
       }
-      if (!isWall(x, y + moveStepY, MAP)) {
+      if (!getIsWall(x, y + moveStepY, MAP)) {
         y += moveStepY;
       }
 

@@ -4,21 +4,24 @@ import { rayCaster } from "./rendering/raycaster";
 import { FOV_ANGLE } from "../constants/gameConfig";
 import { MAP } from "../constants/map";
 
+import { getCameraPlane } from "../helpers/getCameraPlane";
+
 // Our raycaster setup, we call this in app, pass the variables to our Raycaster
 // which then does our RayCasting / DDA
 export const renderRaycaster = (context, player) => {
-  const dirX = Math.cos(player.angle);
-  const dirY = Math.sin(player.angle);
-  const fov = FOV_ANGLE;
-  const planeX = -dirY * fov;
-  const planeY = dirX * fov;
+  const screenWidth = context.canvas.width;
+  const screenHeight = context.canvas.height;
+  const aspectRatio = screenWidth / screenHeight;
+  const FOV = (60 * Math.PI) / 180;
+
+  const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
 
   rayCaster({
     player,
     planeX,
     planeY,
-    screenWidth: context.canvas.width,
-    screenHeight: context.canvas.height,
+    screenWidth,
+    screenHeight,
     map: MAP,
     context,
   });

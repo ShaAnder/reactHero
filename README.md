@@ -171,3 +171,7 @@ Screenshots will go here once I get rendering working
 - Deploy as a playable web game
 
 ---
+
+## CREDIT
+
+https://www.scottsmitelli.com/articles/we-can-fix-your-raycaster/

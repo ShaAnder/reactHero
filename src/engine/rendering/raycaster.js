@@ -93,10 +93,10 @@ export const rayCaster = ({
     // Perspective: closer walls are taller
     const wallHeight = Math.floor(screenHeight / perpWallDist);
     // Vertically center the wall slice
-    const wallStart = Math.max(0, ((screenHeight - wallHeight) / 2) | 0);
+    const wallStart = Math.max(0, Math.floor((screenHeight - wallHeight) / 2));
     const wallEnd = Math.min(
       screenHeight,
-      ((screenHeight + wallHeight) / 2) | 0
+      Math.ceil((screenHeight + wallHeight) / 2)
     );
 
     // --- 8. Draw the Wall Slice ---

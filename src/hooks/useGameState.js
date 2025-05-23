@@ -5,16 +5,16 @@ import {
   PLAYER_SPEED,
   PLAYER_ROTATION_SPEED,
 } from "../constants/playerConfig";
-
 import { getIsWall } from "../helpers/getIsWall";
 import { MAP } from "../constants/map";
+import { FOV_ANGLE } from "../constants/gameConfig";
 
 // Classic Wolf3D FOV (adjust as needed)
-const FOV = 0.66;
+
 const MOUSE_SENSITIVITY = 0.002;
 
 export const useGameState = () => {
-  // Player state: position, angle, speed, etc.
+  // Player's state: position, angle, movement speed, rotation speed
   const [player, setPlayer] = useState({
     x: PLAYER_START_X,
     y: PLAYER_START_Y,
@@ -23,7 +23,7 @@ export const useGameState = () => {
     rotationSpeed: PLAYER_ROTATION_SPEED,
   });
 
-  // Tracks which keys are currently held down
+  // Tracks which movement keys are currently pressed
   const keys = useRef({
     up: false,
     down: false,
@@ -33,10 +33,11 @@ export const useGameState = () => {
     strafeRight: false,
   });
 
-  // Reference to your canvas for pointer lock
+  // Reference to the canvas element (for pointer lock and mouse look)
   const canvasRef = useRef(null);
 
   // --- Keyboard controls ---
+  // Set keys as pressed when pressed down
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {
       case "ArrowUp":
@@ -64,6 +65,7 @@ export const useGameState = () => {
     }
   }, []);
 
+  // Set keys as released when released
   const handleKeyUp = useCallback((e) => {
     switch (e.key) {
       case "ArrowUp":
@@ -91,6 +93,7 @@ export const useGameState = () => {
     }
   }, []);
 
+  // Register/unregister key listeners on mount/unmount
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -105,14 +108,14 @@ export const useGameState = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Request pointer lock on click
+    // Request pointer lock when the canvas is clicked
     const handleCanvasClick = () => {
       if (canvas.requestPointerLock) {
         canvas.requestPointerLock();
       }
     };
 
-    // Mouse move handler: update player angle
+    // Rotate player angle based on mouse movement (if pointer is locked)
     const handleMouseMove = (e) => {
       if (document.pointerLockElement === canvas) {
         setPlayer((prev) => ({
@@ -131,16 +134,17 @@ export const useGameState = () => {
     };
   }, []);
 
-  // --- Game loop update ---
+  // --- Game loop update function ---
+  // Moves and rotates the player based on input and time elapsed
   const updateGameState = useCallback((deltaTime) => {
     setPlayer((prevPlayer) => {
       let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 
-      // Rotation (arrow keys)
+      // Handle rotation with arrow keys
       if (keys.current.left) angle -= rotationSpeed * deltaTime;
       if (keys.current.right) angle += rotationSpeed * deltaTime;
 
-      // Calculate intended movement
+      // Calculate movement deltas
       let moveStepX = 0,
         moveStepY = 0;
       if (keys.current.up) {
@@ -160,7 +164,7 @@ export const useGameState = () => {
         moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
       }
 
-      // Try X movement, then Y movement (allows sliding along walls)
+      // Try to move in X, then Y (allows sliding along walls)
       if (!getIsWall(x + moveStepX, y, MAP)) {
         x += moveStepX;
       }
@@ -168,7 +172,7 @@ export const useGameState = () => {
         y += moveStepY;
       }
 
-      // Normalize angle
+      // Normalize angle to stay within 0 to 2π
       if (angle < 0) angle += Math.PI * 2;
       if (angle >= Math.PI * 2) angle -= Math.PI * 2;
 
@@ -176,20 +180,80 @@ export const useGameState = () => {
     });
   }, []);
 
-  // --- Camera plane calculation (perpendicular to direction) ---
+  // --- Camera plane calculation ---
+  // Returns the camera plane vector perpendicular to the player's direction
   const getCameraPlane = (angle) => ({
-    planeX: -Math.sin(angle) * FOV,
-    planeY: Math.cos(angle) * FOV,
+    planeX: -Math.sin(angle) * FOV_ANGLE,
+    planeY: Math.cos(angle) * FOV_ANGLE,
   });
 
   const { planeX, planeY } = getCameraPlane(player.angle);
 
-  // --- Return state, updater, camera plane, and canvasRef ---
+  // --- Return all relevant state and helpers ---
   return {
-    player,
-    planeX,
-    planeY,
-    updateGameState,
-    canvasRef,
+    player, // Player state (x, y, angle, speeds)
+    planeX, // Camera plane X component
+    planeY, // Camera plane Y component
+    updateGameState, // Function to update player state each frame
+    canvasRef, // Ref for the canvas (for pointer lock and mouse look)
   };
 };
+
+/*
+
+Summary Notes
+What does this hook do?
+Manages all player state (position, angle, movement, rotation) and input for a Wolfenstein 3D–style raycaster game.
+
+Handles keyboard controls, mouse look, collision detection, and camera plane math.
+
+Provides everything needed for the main game loop and rendering.
+
+How does it work?
+Player State:
+
+Tracks position, angle, movement speed, and rotation speed.
+
+Keyboard Input:
+
+Listens for keydown/keyup events to update which movement keys are held.
+
+Supports forward/back, rotate left/right, and strafe left/right.
+
+Mouse Look:
+
+Uses pointer lock for immersive mouse control.
+
+Rotates the player’s angle based on horizontal mouse movement.
+
+Game Loop Update:
+
+Calculates intended movement based on pressed keys and elapsed time.
+
+Uses trigonometry (cos/sin) to move in the direction the player is facing.
+
+Checks for wall collisions before moving, allowing for smooth sliding along walls.
+
+Keeps the player’s angle normalized between 0 and 2π radians.
+
+Camera Plane Calculation:
+
+Computes a vector perpendicular to the player’s direction, scaled by FOV.
+
+This is used by the raycaster to determine the spread of rays for the 3D view.
+
+Canvas Ref:
+
+Provides a ref for the canvas element, used for pointer lock and mouse movement.
+
+Why is this important for a raycaster game?
+This hook centralizes all player movement, view, and control logic.
+
+Ensures smooth, responsive controls and correct camera math for rendering the 3D scene.
+
+Makes it easy to integrate with your game loop and rendering system.
+
+In short:
+This hook is the heart of your player and control system, handling movement, rotation, mouse look, collision, and camera math—all essential for a smooth, playable raycasting game.
+
+*/

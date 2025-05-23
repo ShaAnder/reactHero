@@ -105,3 +105,90 @@ export const rayCaster = ({
     context.fillRect(x, wallStart, RAY_STEP, wallEnd - wallStart);
   }
 };
+
+/*
+
+Core Concept
+A raycaster simulates a 3D world using 2D math by casting invisible rays from the player’s viewpoint—one for each vertical column on the screen. Each ray checks how far it travels before hitting a wall in the 2D map. The closer the wall, the taller it appears on screen, creating the illusion of depth.
+
+Step-by-Step Breakdown
+1. Camera Plane & Ray Direction
+
+The screen is divided into columns, each mapped to a value (cameraX) between -1 (left) and +1 (right).
+
+The camera plane defines the field of view (FOV) width and orientation.
+
+For each column, the ray’s direction (rayDirX, rayDirY) is calculated using the player’s direction and the camera plane:
+
+text
+rayDirX = dirX + planeX * cameraX
+rayDirY = dirY + planeY * cameraX
+This spreads the rays evenly across the FOV, with the center ray pointing straight ahead and the side rays pointing to the FOV’s edges.
+
+2. Player Position on the Map
+
+The player’s pixel position is converted to a map grid tile by dividing by TILE_SIZE and rounding down.
+
+3. DDA Setup (Digital Differential Analyzer)
+
+deltaDistX and deltaDistY represent how far the ray must travel to cross the next vertical or horizontal grid line, respectively.
+
+The DDA algorithm uses these distances to efficiently step the ray through the map grid, checking for wall collisions.
+
+4. Step & Initial Side Distances
+
+stepX and stepY determine if the ray moves left/right or up/down.
+
+sideDistX and sideDistY calculate the initial distances from the ray’s start to the first grid line in each direction.
+
+5. DDA Loop – Stepping Until Hit
+
+The ray advances through the grid, always stepping in the direction (x or y) with the shortest distance to the next grid line, until it hits a wall.
+
+6. Calculate Perpendicular Wall Distance
+
+To avoid the fish-eye effect (warped walls at the screen edges), the distance to the wall is measured perpendicular to the screen, not along the ray’s path.
+
+This is done using:
+
+For vertical wall hits:
+
+text
+perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX
+For horizontal wall hits:
+
+text
+perpWallDist = (mapY - posY + (1 - stepY) / 2) / rayDirY
+This correction ensures accurate wall heights and perspective.
+
+7. Wall Height on Screen
+
+Wall slice height is calculated by dividing the screen height by the perpendicular wall distance: closer walls appear taller, further ones shorter.
+
+8. Draw the Wall Slice
+
+For each column, a vertical line is drawn with height based on distance.
+
+Wall color can be adjusted based on orientation for a simple lighting effect.
+
+Extra Concepts
+RAY_STEP: Increasing this skips columns for faster but chunkier rendering (retro look).
+
+Trigonometry Recap: Trigonometric functions (sine, cosine, tangent) relate triangle angles to side lengths, essential for calculating ray directions and distances in the raycaster.
+
+Trigonometry Essentials
+Right Triangle Sides: Opposite, Adjacent, Hypotenuse.
+
+Main Ratios:
+
+Sine (sin θ): Opposite / Hypotenuse
+
+Cosine (cos θ): Adjacent / Hypotenuse
+
+Tangent (tan θ): Opposite / Adjacent
+
+SOH CAH TOA helps remember these relationships.
+
+Applications: Used to solve triangles, model waves, and in navigation, physics, and graphics
+
+*/

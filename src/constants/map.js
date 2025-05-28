@@ -2,6 +2,11 @@
 // 1 = wall
 // 0 = empty space
 // Grid size: 17 rows x 15 columns
+
+// Map dimensions (17x15 grid) in future will be derived from rng map
+export const MAP_NUM_ROWS = 17;
+export const MAP_NUM_COLS = 15;
+
 export const MAP = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],

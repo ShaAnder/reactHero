@@ -1,40 +1,31 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Canvas from "./components/canvas/Canvas";
-import { useGameLoop } from "./hooks/useGameLoop";
-import { useGameState } from "./hooks/useGameState";
+import { useGameLoop } from "./hooks/gameLogic/useGameLoop";
+import { useGameState } from "./hooks/gameLogic/useGameState";
 import { render as gameRender } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 
 function App() {
-  // Handles player movement and state
+  // Custom hook managing the player state and input
   const { player, updateGameState, canvasRef } = useGameState();
-  // Toggle FPS counter
+
+  // Toggle to show or hide FPS overlay
   const [showFps, setShowFps] = useState(true);
 
-  // This function draws everything each frame
-  const render = (deltaTime) => {
-    // Bail if canvas isn't ready
-    if (!canvasRef.current) return;
-
+  // Frame rendering function (draws everything)
+  const render = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const context = canvas.getContext("2d");
-    // Wipe the canvas clean before drawing
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the minimap and (eventually) the 3D view
+    // Draw everything (minimap, 3D scene, etc.)
     gameRender(context, player);
   };
 
-  // This hook keeps the game loop running and returns the FPS
+  // Start the game loop and receive current FPS
   const fps = useGameLoop(updateGameState, render);
-
-  // Grab the actual canvas element from the DOM after it mounts
-  useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = document.querySelector("canvas");
-      canvasRef.current = canvas;
-    }
-  }, []);
 
   return (
     <div
@@ -46,16 +37,15 @@ function App() {
         height: "100vh",
       }}
     >
-      {/* The main game canvas */}
+      {/* Game canvas */}
       <Canvas
         ref={canvasRef}
         width={WINDOW_WIDTH}
         height={WINDOW_HEIGHT}
-        style={{
-          border: "1px solid black",
-        }}
+        style={{ border: "1px solid black" }}
       />
-      {/* Show FPS in the corner if enabled */}
+
+      {/* FPS Counter Overlay */}
       {showFps && (
         <div
           style={{
@@ -63,6 +53,8 @@ function App() {
             top: "10px",
             left: "10px",
             color: "white",
+            fontFamily: "monospace",
+            fontSize: "14px",
           }}
         >
           FPS: {fps}

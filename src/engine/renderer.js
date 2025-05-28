@@ -1,41 +1,37 @@
-// Import the minimap rendering function
+// Import the minimap renderer
 import { renderMinimap } from "./rendering/miniMapRenderer";
-// Import the main raycasting rendering function
+// Import the core 3D raycasting renderer
 import { rayCaster } from "./rendering/raycaster";
 
-// Import game configuration constants (Field of View angle)
+// Game constants (field of view, etc.)
 import { FOV_ANGLE } from "../constants/gameConfig";
-// Import the map layout
 import { MAP } from "../constants/map";
 
-// Import a helper to calculate the camera plane based on player angle and FOV
+// Utility to calculate the camera plane based on player angle and FOV
 import { getCameraPlane } from "../helpers/getCameraPlane";
 
 /**
- * Sets up and calls the raycaster for the main 3D view.
- * @param {CanvasRenderingContext2D} context - The drawing context for the canvas.
- * @param {Object} player - The player object, containing position and angle.
+ * Sets up and runs the raycasting engine to draw the 3D scene.
+ *
+ * @param {CanvasRenderingContext2D} context - The canvas drawing context.
+ * @param {Object} player - Player object containing position and view angle.
  */
 export const renderRaycaster = (context, player) => {
-  // Get the width and height of the canvas (the screen)
   const screenWidth = context.canvas.width;
   const screenHeight = context.canvas.height;
-
-  // Calculate the aspect ratio (width divided by height)
   const aspectRatio = screenWidth / screenHeight;
 
-  // Set the field of view (FOV) in radians (here, 60 degrees)
-  // Most math functions in JS use radians
+  // Field of view in radians (60 degrees is a common default)
   const FOV = (60 * Math.PI) / 180;
 
-  // Calculate the camera plane (used to determine the spread of rays for FOV)
-  // planeX and planeY are perpendicular to the player's viewing direction
+  // The camera plane defines how wide the rays spread from the player’s view direction.
+  // It’s perpendicular to the direction the player is facing, and scaled by FOV and aspect ratio.
+  //
+  // Imagine the player’s view as a triangle shooting forward.
+  // The camera plane defines the base of that triangle — how wide the ray directions fan out.
   const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
 
-  // Call the raycaster function, which will:
-  // - Cast rays for each column of the screen
-  // - Calculate wall distances and heights
-  // - Render the 3D scene onto the canvas
+  // Run the raycasting renderer to draw walls and perspective-correct geometry
   rayCaster({
     player,
     planeX,
@@ -48,86 +44,13 @@ export const renderRaycaster = (context, player) => {
 };
 
 /**
- * Main render function called each frame.
- * Renders the 3D scene and then overlays the minimap.
- * @param {CanvasRenderingContext2D} context - The drawing context for the canvas.
- * @param {Object} player - The player object, containing position and angle.
+ * Main rendering function called every frame.
+ * It handles both the 3D scene and the top-down minimap.
+ *
+ * @param {CanvasRenderingContext2D} context - The canvas drawing context.
+ * @param {Object} player - Player state including position and facing angle.
  */
 export const render = (context, player) => {
-  // Render the main 3D view using the raycaster
-  renderRaycaster(context, player);
-
-  // Render the minimap on top for reference/debugging
-  renderMinimap(context, player);
+  renderRaycaster(context, player); // Render the 3D environment
+  renderMinimap(context, player); // Draw minimap overlay for debug/navigation
 };
-
-/*
-
-What does this file do?
-
-Sets up the main 3D raycasting view and overlays a minimap.
-
-Handles screen sizing, field of view, and camera plane calculations.
-
-Delegates the heavy lifting of rendering to specialized modules.
-
-Step-by-Step Breakdown
-Screen and FOV Setup
-
-Gets the canvas dimensions and aspect ratio.
-
-Converts FOV from degrees to radians for math functions.
-
-Camera Plane Calculation
-
-Uses the player's angle and FOV to compute the camera plane.
-
-The camera plane is perpendicular to the player's direction and determines how wide the field of view is.
-
-Raycasting
-
-Calls rayCaster, passing all the necessary info:
-
-Player position and angle
-
-Camera plane (for FOV)
-
-Screen dimensions
-
-Map layout
-
-Drawing context
-
-The raycaster:
-
-Casts a ray for each column of the screen.
-
-Calculates where each ray hits a wall and how far it travels.
-
-Uses this distance to draw a vertical slice of wall, creating the 3D effect.
-
-Minimap Rendering
-
-After the main scene, draws a 2D top-down minimap overlay for reference.
-
-Key Math Concepts Involved
-Aspect Ratio: Ensures the FOV looks correct on any screen shape.
-
-Radians: Trigonometric functions (sin, cos) require angles in radians.
-
-Camera Plane: A vector perpendicular to the player's direction, scaled by FOV and aspect ratio, used to spread rays across the screen.
-
-Ray Direction: For each screen column, a unique direction is calculated using the player’s direction and the camera plane, ensuring rays fan out evenly across the FOV.
-
-How It All Fits Together
-The player’s position and viewing angle set the starting point and direction.
-
-The camera plane determines the left and right limits of the FOV.
-
-Each screen column gets a ray, which is cast into the world to see what it hits.
-
-The distance to the first wall hit by each ray determines how tall the wall appears on screen.
-
-The minimap gives a top-down view for orientation and debugging.
-
-*/

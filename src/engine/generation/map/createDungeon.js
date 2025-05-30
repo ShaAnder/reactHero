@@ -4,8 +4,9 @@ import { getBlankMap } from "../../../helpers/getBlankMap";
 import { carveRoom } from "./carveRoom";
 import { initRandomWalker } from "./randomWalker";
 import { validateMap as validateRoute } from "./validateMap";
-import { getFloorTile } from "../../../helpers/getFloorTile";
+// import { getFloorTile } from "../../../helpers/getFloorTile";
 import { getFurthestFloor } from "../../../helpers/getFurthestTile";
+import { DEFAULT_MAP_CONFIG } from "../../../constants/gameConfig";
 
 /**
  * Main function to generate a playable dungeon layout.
@@ -19,12 +20,11 @@ import { getFurthestFloor } from "../../../helpers/getFurthestTile";
  * @param {Object} [options] - Optional config like seedPosition, dimensions, etc.
  * @returns {{ map: number[][], start: [number, number], exit: [number, number] }}
  */
-export const generateMap = async (options = {}) => {
-  const dimensions = options.dimensions || 64;
-  const numRooms = options.numRooms || 20;
-  const maxTunnels = options.maxTunnels || 100;
-  const roomMinSize = 3;
-  const roomMaxSize = 8;
+export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
+  const dimensions = options.dimensions;
+  const numRooms = options.numRooms;
+  const roomMinSize = options.roomMinSize;
+  const roomMaxSize = options.roomMaxSize;
 
   let map, start, exit;
   let valid = false;
@@ -36,9 +36,30 @@ export const generateMap = async (options = {}) => {
     map = getBlankMap(1, dimensions);
     const roomCenters = [];
 
+    // Step 1: Choose a random spawn point near the outer edges
+    const padding = 5;
+    const spawnX = Math.floor(Math.random() * padding) + 1;
+    const spawnY = Math.floor(Math.random() * padding) + 1;
+    const maxX = dimensions - padding - 1;
+    const maxY = dimensions - padding - 1;
+    const finalX = Math.random() > 0.5 ? spawnX : maxX;
+    const finalY = Math.random() > 0.5 ? spawnY : maxY;
+
+    // Step 2: Carve a 3×3 spawn room centered at this point
+    const spawnCenter = carveRoom(map, finalX, finalY, 3, 3);
+
+    if (!spawnCenter) {
+      console.warn("Failed to carve spawn room at:", finalX, finalY);
+      continue;
+    }
+
+    // Step 3: Store spawn center as the start position (x, y order)
+    start = [spawnCenter[1], spawnCenter[0]]; // [x, y]
+    roomCenters.push(spawnCenter);
+
+    // Generate rooms
     for (let i = 0; i < numRooms; i++) {
       const room = generateRandomRoom(map, roomMinSize, roomMaxSize);
-
       if (room) {
         const center = carveRoom(
           map,
@@ -51,16 +72,11 @@ export const generateMap = async (options = {}) => {
           roomCenters.push(center);
         }
       }
-
-      // Yield control to keep UI responsive every few rooms
       if (i % 5 === 0) {
         await new Promise((r) => setTimeout(r, 0));
       }
     }
 
-    start = options.seedPosition || getFloorTile(map);
-
-    // Defensive check
     if (!start || !Array.isArray(start)) {
       console.warn("Invalid start position generated:", start);
       continue;
@@ -73,25 +89,40 @@ export const generateMap = async (options = {}) => {
       maxCorridor: 6,
     });
 
-    // Defensive check for initRandomWalker
     if (!map || !Array.isArray(map)) {
       console.warn("Random walker failed to generate map properly.");
       continue;
     }
 
-    exit = getFurthestFloor(map, start, 40);
+    // Get the furthest floor tile from the start as exit
+    let rawExit = getFurthestFloor(map, [start[1], start[0]], 40); // [y, x]
+    if (!rawExit || !Array.isArray(rawExit)) {
+      console.warn("Invalid exit position generated:", rawExit);
+      continue;
+    }
+    exit = [rawExit[1], rawExit[0]]; // convert to [x, y]
 
-    // Defensive check for exit
-    if (!exit || !Array.isArray(exit)) {
-      console.warn("Invalid exit position generated:", exit);
+    // Defensive: Exit not same as start
+    if (exit[0] === start[0] && exit[1] === start[1]) {
+      console.warn("Exit same as start. Retrying...");
       continue;
     }
 
-    valid = validateRoute(map, start, exit);
+    // --- NEW: Ensure spawn and exit are on walkable tiles ---
+    if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
+      console.warn("Spawn or exit is not on a walkable tile. Retrying...");
+      continue;
+    }
+
+    // Validate that the map is completable (path exists)
+    valid = validateRoute(
+      map,
+      [start[1], start[0]], // [y, x]
+      [exit[1], exit[0]] // [y, x]
+    );
 
     if (!valid) {
       console.warn(`Map validation failed on attempt ${attempts}. Retrying...`);
-      // Yield before retrying
       await new Promise((r) => setTimeout(r, 0));
     }
   }

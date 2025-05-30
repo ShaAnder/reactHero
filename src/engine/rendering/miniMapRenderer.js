@@ -1,5 +1,4 @@
 import { TILE_SIZE } from "../../constants/gameConfig";
-import { MAP_NUM_ROWS, MAP_NUM_COLS, MAP } from "../../constants/map";
 
 /**
  * Renders a scrolling minimap centered on the player.
@@ -8,11 +7,17 @@ import { MAP_NUM_ROWS, MAP_NUM_COLS, MAP } from "../../constants/map";
  * @param {CanvasRenderingContext2D} context - The drawing context for the canvas.
  * @param {Object} player - The player object, with x, y (in pixels) and angle (in radians).
  */
-export const renderMinimap = (context, player) => {
+export const renderMinimap = (context, player, map) => {
+  if (!map || !map.length || !map[0].length) return;
+
   const MINIMAP_TILE_SIZE = 9;
   const VIEWPORT_TILES = 15;
   const MINIMAP_SIZE = VIEWPORT_TILES * MINIMAP_TILE_SIZE;
   const MINIMAP_MARGIN = 20;
+
+  // Dynamic map dimensions
+  const MAP_NUM_ROWS = map.length;
+  const MAP_NUM_COLS = map[0].length;
 
   // Set the minimap's top-left position in the canvas
   const minimapX = context.canvas.width - MINIMAP_SIZE - MINIMAP_MARGIN;
@@ -57,7 +62,7 @@ export const renderMinimap = (context, player) => {
       )
         continue;
 
-      const tileType = MAP[mapRow][mapCol];
+      const tileType = map[mapRow][mapCol];
 
       // Convert to pixel position on the minimap
       const drawX = minimapX + col * MINIMAP_TILE_SIZE - offsetX;

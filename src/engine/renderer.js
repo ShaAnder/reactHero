@@ -5,7 +5,6 @@ import { rayCaster } from "./rendering/raycaster";
 
 // Game constants (field of view, etc.)
 import { FOV_ANGLE } from "../constants/gameConfig";
-import { MAP } from "../constants/map";
 
 // Utility to calculate the camera plane based on player angle and FOV
 import { getCameraPlane } from "../helpers/getCameraPlane";
@@ -16,13 +15,13 @@ import { getCameraPlane } from "../helpers/getCameraPlane";
  * @param {CanvasRenderingContext2D} context - The canvas drawing context.
  * @param {Object} player - Player object containing position and view angle.
  */
-export const renderRaycaster = (context, player) => {
+export const renderRaycaster = (context, player, map) => {
   const screenWidth = context.canvas.width;
   const screenHeight = context.canvas.height;
   const aspectRatio = screenWidth / screenHeight;
 
   // Field of view in radians (60 degrees is a common default)
-  const FOV = (60 * Math.PI) / 180;
+  const FOV = FOV_ANGLE;
 
   // The camera plane defines how wide the rays spread from the player’s view direction.
   // It’s perpendicular to the direction the player is facing, and scaled by FOV and aspect ratio.
@@ -38,7 +37,7 @@ export const renderRaycaster = (context, player) => {
     planeY,
     screenWidth,
     screenHeight,
-    map: MAP,
+    map,
     context,
   });
 };
@@ -50,9 +49,9 @@ export const renderRaycaster = (context, player) => {
  * @param {CanvasRenderingContext2D} context - The canvas drawing context.
  * @param {Object} player - Player state including position and facing angle.
  */
-export const render = (context, player) => {
-  renderRaycaster(context, player); // Render the 3D environment
-  renderMinimap(context, player); // Draw minimap overlay for debug/navigation
+export const render = (context, player, map) => {
+  renderRaycaster(context, player, map); // Render the 3D environment
+  renderMinimap(context, player, map); // Draw minimap overlay for debug/navigation
 };
 
 /** how this works:

@@ -54,3 +54,25 @@ export const render = (context, player) => {
   renderRaycaster(context, player); // Render the 3D environment
   renderMinimap(context, player); // Draw minimap overlay for debug/navigation
 };
+
+/** how this works:
+ *
+ * This is your top-level rendering system — called every frame!
+ *
+ * Here's what it's doing:
+ * 1. `renderRaycaster()`:
+ *    - Calculates how wide the FOV should be based on screen shape (aspect ratio).
+ *    - Uses the player’s current angle to figure out the direction they’re facing.
+ *    - Constructs a "camera plane" to spread out rays for that wide-angle view.
+ *    - Passes everything to the `rayCaster()` to handle actual 3D drawing.
+ *
+ * 2. `renderMinimap()`:
+ *    - Draws a top-down 2D view of the map and the player.
+ *    - Great for debugging or giving the player a sense of navigation.
+ *
+ * Think of this file as the director. It doesn't do the drawing itself,
+ * but it tells the raycaster and minimap systems when and how to render.
+ *
+ * Eventually, you'll probably have more stuff here — enemies, pickups, HUD, etc.
+ * But for now, this gives you the foundational loop to paint each frame.
+ */

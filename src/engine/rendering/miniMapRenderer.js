@@ -14,20 +14,21 @@ export const renderMinimap = (context, player) => {
   const MINIMAP_SIZE = VIEWPORT_TILES * MINIMAP_TILE_SIZE;
   const MINIMAP_MARGIN = 20;
 
+  // Set the minimap's top-left position in the canvas
   const minimapX = context.canvas.width - MINIMAP_SIZE - MINIMAP_MARGIN;
   const minimapY = MINIMAP_MARGIN;
 
-  // Minimap background
+  // Draw background box
   context.fillStyle = "#111";
   context.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
-  // Clip overflow
+  // Clip anything outside minimap area
   context.save();
   context.beginPath();
   context.rect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
   context.clip();
 
-  // --- Center camera on player (in tile units, including fractional) ---
+  // --- Center camera on player (in tile units) ---
   const cameraCenterTileX = player.x / TILE_SIZE;
   const cameraCenterTileY = player.y / TILE_SIZE;
 
@@ -37,16 +38,17 @@ export const renderMinimap = (context, player) => {
   const startCol = Math.floor(topLeftTileX);
   const startRow = Math.floor(topLeftTileY);
 
-  // Sub-tile pixel offset (how far into the tile we're scrolled)
+  // Sub-tile offset to allow smooth scrolling
   const offsetX = (topLeftTileX - startCol) * MINIMAP_TILE_SIZE;
   const offsetY = (topLeftTileY - startRow) * MINIMAP_TILE_SIZE;
 
-  // Loop only visible area
+  // Loop through only the tiles visible in the viewport
   for (let row = 0; row <= VIEWPORT_TILES; row++) {
     for (let col = 0; col <= VIEWPORT_TILES; col++) {
       const mapRow = startRow + row;
       const mapCol = startCol + col;
 
+      // Skip if outside map bounds
       if (
         mapRow < 0 ||
         mapRow >= MAP_NUM_ROWS ||
@@ -57,23 +59,24 @@ export const renderMinimap = (context, player) => {
 
       const tileType = MAP[mapRow][mapCol];
 
-      // Position on minimap (with subpixel scroll correction)
+      // Convert to pixel position on the minimap
       const drawX = minimapX + col * MINIMAP_TILE_SIZE - offsetX;
       const drawY = minimapY + row * MINIMAP_TILE_SIZE - offsetY;
 
+      // Fill based on tile type (wall or floor)
       context.fillStyle = tileType === 1 ? "#222" : "#fff";
       context.fillRect(drawX, drawY, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
     }
   }
 
-  context.restore(); // remove clip
+  context.restore(); // remove clip region
 
-  // Draw minimap border
+  // Draw a nice border around the minimap
   context.lineWidth = 2;
   context.strokeStyle = "black";
   context.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
-  // --- Player in center ---
+  // --- Draw player in center of minimap ---
   const centerX = minimapX + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
   const centerY = minimapY + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
 
@@ -82,7 +85,7 @@ export const renderMinimap = (context, player) => {
   context.arc(centerX, centerY, MINIMAP_TILE_SIZE / 2, 0, Math.PI * 2);
   context.fill();
 
-  // Player facing direction
+  // Draw direction line (facing angle)
   context.strokeStyle = "red";
   context.beginPath();
   context.moveTo(centerX, centerY);
@@ -92,3 +95,23 @@ export const renderMinimap = (context, player) => {
   );
   context.stroke();
 };
+
+/** how this function works:
+ *
+ * This function renders a dynamic minimap that scrolls with the player.
+ * It's basically a moving camera that shows only a small part of the world map.
+ *
+ * - Constants define the minimap size, zoom level, and screen offset.
+ * - First we calculate where the minimap box will draw on the canvas.
+ * - Then we figure out which tiles are visible based on the player’s current position.
+ * - We clip anything outside the minimap boundary using canvas clipping.
+ * - A loop draws only the visible tile data (wall vs floor).
+ * - Sub-tile offsets are used to keep scrolling smooth (fractional tile movement).
+ * - The player is drawn in the center with a dot and a line showing the direction they’re facing.
+ *
+ * Notes:
+ * - The player's position is always centered.
+ * - The minimap tiles are scaled down but accurately reflect the full map.
+ * - This gives players a limited but informative top-down view of their surroundings.
+ *
+ */

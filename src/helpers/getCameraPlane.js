@@ -12,20 +12,41 @@
  * @param {number} aspectRatio - Screen's width divided by height.
  * @returns {Object} planeX and planeY - the 2D vector representing the camera plane.
  */
-export function getCameraPlane(angle, fovRadians, aspectRatio) {
-  // Forward-facing direction of the player as a unit vector
-  const dirX = Math.cos(angle);
-  const dirY = Math.sin(angle);
+export const getCameraPlane = (angle, fovRadians, aspectRatio) => {
+  // Step 1: Get the player's view direction as a unit vector
+  const dirX = Math.cos(angle); // Facing horizontally
+  const dirY = Math.sin(angle); // Facing vertically
 
-  // The camera plane is perpendicular to the view direction.
+  // Step 2: Rotate the direction vector 90 degrees to get a perpendicular plane vector
   //
-  // We compute it by rotating the direction vector 90° counter-clockwise,
-  // then scaling it by tan(FOV / 2), which determines how far out to the side rays should fan.
+  // In 2D:
+  //   Rotating (x, y) counter-clockwise by 90° gives you (-y, x)
+  //   This gives you a vector that "fans out" sideways from the player's view.
   //
-  // We also multiply the X component by the aspect ratio to ensure the horizontal field of view
-  // doesn’t look squished or stretched depending on screen dimensions.
+  // Step 3: Scale it by the FOV to control how wide the camera plane is.
+  //   - We use tan(FOV / 2) because it defines how far off-center the edge rays go.
+  //   - We multiply planeX by aspectRatio to account for screen shape (so things don’t look squished).
+  const fovScale = Math.tan(fovRadians / 2);
+
   return {
-    planeX: -dirY * Math.tan(fovRadians / 2) * aspectRatio,
-    planeY: dirX * Math.tan(fovRadians / 2),
+    planeX: -dirY * fovScale * aspectRatio,
+    planeY: dirX * fovScale,
   };
-}
+};
+
+/** how this works:
+ *
+ * Imagine the player is standing at the center of the screen, looking forward.
+ * The camera plane is like the "view window" in front of them.
+ *
+ * If the player is looking north (up), the view direction is (0, -1),
+ * and the camera plane would stretch horizontally from left to right.
+ *
+ * By rotating the direction 90°, we get a side-facing vector that defines the edges of vision.
+ * The longer this vector is, the wider the FOV. We scale it using `tan(FOV / 2)` to match real-world projection math.
+ *
+ * Finally, we apply the screen’s aspect ratio to make sure things don’t look distorted on widescreens.
+ *
+ * This camera plane is then added (in small steps) to the direction vector to cast individual rays
+ * per column on screen.
+ */

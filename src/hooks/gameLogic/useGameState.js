@@ -1,113 +1,148 @@
 import { useState, useCallback, useRef } from "react";
-import { usePlayerControls } from "./usePlayerControls"; // Custom hook for handling keyboard & mouse input
+import { usePlayerControls } from "./usePlayerControls";
 import {
   PLAYER_START_X,
   PLAYER_START_Y,
   PLAYER_SPEED,
   PLAYER_ROTATION_SPEED,
-  MOUSE_SENSITIVITY,
 } from "../../constants/playerConfig";
-import { getIsWall } from "../../helpers/getIsWall"; // Utility for collision checking
-import { MAP } from "../../constants/map"; // Current game map (2D grid)
-import { FOV_ANGLE } from "../../constants/gameConfig"; // Used to compute the camera plane
+import { getIsWall } from "../../helpers/getIsWall";
+import { MAP } from "../../constants/map";
+import { FOV_ANGLE } from "../../constants/gameConfig";
+import { getCameraPlane } from "../../helpers/getCameraPlane";
 
 /**
  * useGameState
- * This hook manages the player’s position, angle, movement, and camera info for the game loop.
- * It acts as the central source of truth for anything player-related.
+ *
+ * This hook manages everything related to the player's game state:
+ * - Position
+ * - Angle/direction
+ * - Movement logic (WASD, rotation, strafing)
+ * - Collision with walls
+ * - Mouse/keyboard input
+ * - Camera plane math for raycasting (using external helper)
+ *
+ * It keeps your player logic clean, centralized, and reactive.
  */
-export const useGameState = () => {
+export const useGameState = (aspectRatio) => {
   // --- Player State ---
-  // This holds the current player position, facing angle, and movement/rotation speeds.
+  // This state tracks the player's X/Y position, direction (angle),
+  // and their movement/rotation speed.
   const [player, setPlayer] = useState({
+    // Horizontal position in world pixels
     x: PLAYER_START_X,
+    // Vertical position in world pixels
     y: PLAYER_START_Y,
-    angle: 0, // Angle is in radians, starts at 0 (facing right on screen)
+    // Angle the player is facing, in radians
+    angle: 0,
+    // How fast they walk (pixels per second)
     moveSpeed: PLAYER_SPEED,
+    // How fast they turn (radians per second)
     rotationSpeed: PLAYER_ROTATION_SPEED,
   });
 
   // --- Canvas Ref ---
-  // We attach this to the canvas DOM element so we can use it for pointer lock and mouse movement
+  // This ref is used to attach to the actual <canvas> element in your scene.
+  // Needed so we can request pointer lock and read mouse movement.
   const canvasRef = useRef(null);
 
   // --- Input Handling ---
-  // We delegate keyboard + mouse input to a custom hook.
-  // This returns a `keys` ref with current input state and internally handles event listeners.
+  // usePlayerControls sets up key/mouse listeners and returns a `keys` ref
+  // that tells us which movement inputs are currently active (WASD, etc).
   const keys = usePlayerControls(canvasRef, setPlayer);
 
   /**
    * updateGameState
-   * Called on each frame from the game loop (passes in deltaTime to ensure frame-rate independence)
-   * Moves and rotates the player based on active input, with wall collision checking.
+   *
+   * This function is called every frame from the game loop.
+   * It moves the player based on input and deltaTime,
+   * while checking for walls to avoid clipping through.
    */
   const updateGameState = useCallback(
     (deltaTime) => {
       setPlayer((prevPlayer) => {
         let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 
-        // --- Handle rotation via left/right arrow keys ---
+        // --- Handle Rotation ---
+        // Rotate left/right with arrow keys or mouse movement
         if (keys.current.left) angle -= rotationSpeed * deltaTime;
         if (keys.current.right) angle += rotationSpeed * deltaTime;
 
-        // --- Determine how much to move in X and Y directions ---
+        // --- Movement Calculation ---
+        // moveStepX and moveStepY track how far we want to move this frame
         let moveStepX = 0;
         let moveStepY = 0;
 
-        // Move forward/backward (W/S or up/down keys)
+        // Move forward (W key or up arrow)
         if (keys.current.up) {
           moveStepX += Math.cos(angle) * moveSpeed * deltaTime;
           moveStepY += Math.sin(angle) * moveSpeed * deltaTime;
         }
+
+        // Move backward (S key or down arrow)
         if (keys.current.down) {
           moveStepX -= Math.cos(angle) * moveSpeed * deltaTime;
           moveStepY -= Math.sin(angle) * moveSpeed * deltaTime;
         }
 
-        // Strafe left/right (A/D keys)
+        // Strafe left (A key)
         if (keys.current.strafeLeft) {
           moveStepX += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
           moveStepY += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
         }
+
+        // Strafe right (D key)
         if (keys.current.strafeRight) {
           moveStepX += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
           moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
         }
 
         // --- Wall Collision Detection ---
-        // Only allow the move if there's no wall in the way
+        // Before actually updating the position, make sure we're not
+        // walking into a wall. Check X and Y separately for smoother sliding.
         if (!getIsWall(x + moveStepX, y, MAP)) x += moveStepX;
         if (!getIsWall(x, y + moveStepY, MAP)) y += moveStepY;
 
-        // Keep angle within [0, 2π) to avoid it drifting forever
+        // --- Angle Wrapping ---
+        // Keep the player's angle between 0 and 2π (circle range).
         if (angle < 0) angle += Math.PI * 2;
         if (angle >= Math.PI * 2) angle -= Math.PI * 2;
 
+        // Return updated player state
         return { ...prevPlayer, x, y, angle };
       });
     },
-    [keys] // This hook uses the `keys` ref from input handler
+    [keys] // Depend on the keys ref from input listener
   );
 
-  /**
-   * getCameraPlane
-   * This is used for the raycasting step in rendering.
-   * The camera plane is perpendicular to the player's direction vector and determines the view width.
-   */
-  const getCameraPlane = (angle) => ({
-    planeX: -Math.sin(angle) * FOV_ANGLE,
-    planeY: Math.cos(angle) * FOV_ANGLE,
-  });
+  // --- Use external helper to get camera plane ---
+  // Pass player.angle, FOV_ANGLE, and screen aspect ratio
+  const { planeX, planeY } = getCameraPlane(
+    player.angle,
+    FOV_ANGLE,
+    aspectRatio
+  );
 
-  // Get the current camera plane based on the player's angle
-  const { planeX, planeY } = getCameraPlane(player.angle);
-
-  // --- Expose everything needed by the game loop and renderers ---
+  // --- Expose all game state values needed by the render and update loop ---
   return {
-    player, // Position and direction of the player
-    planeX, // Horizontal component of the camera plane
-    planeY, // Vertical component of the camera plane
-    updateGameState, // Called every frame to update player position
-    canvasRef, // To attach to your <canvas> element for mouse control
+    player, // Player's current position and direction
+    planeX, // Camera plane X component (for raycasting)
+    planeY, // Camera plane Y component (for raycasting)
+    updateGameState, // Main update function called every frame
+    canvasRef, // Ref for attaching to the <canvas> to read mouse input
   };
 };
+
+/**
+ * How These Functions Work:
+ *
+ * - useGameState initializes and manages the player's position, direction, and movement speed using React state.
+ * - It uses a custom hook, usePlayerControls, to track keyboard and mouse inputs, storing active keys in a ref.
+ * - The updateGameState function is called every frame with the time elapsed (deltaTime).
+ *   It updates the player's angle (rotation) and position based on which keys are pressed, factoring in speed and deltaTime.
+ * - Before moving, updateGameState checks for collisions with walls separately on the X and Y axes to allow smooth sliding along walls.
+ * - The angle is wrapped between 0 and 2π to keep rotation values consistent.
+ * - getCameraPlane (external) calculates a vector perpendicular to the player’s direction, scaled by the field of view and adjusted for aspect ratio,
+ *   which is essential for raycasting to determine the player's visible area.
+ * - The hook returns the current player state, camera plane vectors, the update function, and a canvas ref for mouse input handling.
+ */

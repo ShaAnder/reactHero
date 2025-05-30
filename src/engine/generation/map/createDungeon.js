@@ -4,7 +4,6 @@ import { getBlankMap } from "../../../helpers/getBlankMap";
 import { carveRoom } from "./carveRoom";
 import { initRandomWalker } from "./randomWalker";
 import { validateMap as validateRoute } from "./validateMap";
-// import { getFloorTile } from "../../../helpers/getFloorTile";
 import { getFurthestFloor } from "../../../helpers/getFurthestTile";
 import { DEFAULT_MAP_CONFIG } from "../../../constants/gameConfig";
 

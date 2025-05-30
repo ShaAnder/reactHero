@@ -23,18 +23,16 @@ const useCanvas = (draw) => {
 
     // The main rendering loop — runs once per animation frame (~60fps)
     const renderLoop = () => {
-      // Track how many frames have passed
       frameCount++;
       draw(context, frameCount);
-      // Schedule next frame
       animationID = window.requestAnimationFrame(renderLoop);
     };
+
     // Kick off the loop when component mounts
     renderLoop();
 
     // Stop the animation when the component unmounts or draw function changes
     return () => window.cancelAnimationFrame(animationID);
-    // Re-run this setup if the draw function changes
   }, [draw]);
 
   return ref;
@@ -42,18 +40,16 @@ const useCanvas = (draw) => {
 
 export default useCanvas;
 
-/**
- *
- * This hook is a lightweight, reusable way to animate a <canvas> in React. You pass in a draw(context, frameCount
- * function that contains your drawing logic. The hook gives you back a ref, which you attach to your <canvas> tag in
- * JSX.
- *
- * When the component mounts, it:
- *
- * Grabs the canvas and its 2D context.
- * Starts a rendering loop using requestAnimationFrame.
- * On each frame, it increments a counter and calls your draw() function.
- *
- * When the component unmounts (or your draw function changes), it cancels the animation loop to prevent memory leaks.
- *
- */
+/*
+How this file works:
+
+This hook is a lightweight, reusable way to animate a <canvas> in React. You pass in a draw(context, frameCount) function that contains your drawing logic. The hook gives you back a ref, which you attach to your <canvas> tag in JSX.
+
+When the component mounts:
+- It grabs the canvas and its 2D context.
+- Starts a rendering loop using requestAnimationFrame.
+- On each frame, it increments a counter and calls your draw() function.
+
+When the component unmounts (or your draw function changes), it cancels the animation loop to prevent memory leaks.
+
+*/

@@ -9,35 +9,41 @@
  * @returns {number[][]} MAP - A 2D array representing the filled map grid.
  */
 export const getBlankMap = (num, dimensions) => {
-  let MAP = []; // Initialize the map as an empty array
+  let MAP = []; // Start with an empty array for the map
 
-  // Loop through each row
+  // For each row in the grid
   for (let i = 0; i < dimensions; i++) {
-    MAP.push([]); // Add a new row to the map
+    MAP.push([]); // Add a new row
 
-    // Fill that row with `dimensions` columns
+    // Fill the row with the specified value
     for (let x = 0; x < dimensions; x++) {
-      MAP[i].push(num); // Set every tile in this row to the given number
+      MAP[i].push(num);
     }
   }
 
-  return MAP; // Return the complete 2D map
+  return MAP; // Return the completed 2D array
 };
 
-/** how this works:
- *
- * This function builds a square 2D grid (e.g., 64x64 tiles) where every cell contains the same value.
- *
- * It's like laying down tiles to form a blank canvas. You specify what number you want in every tile:
- *   - `0` could mean an empty floor.
- *   - `1` might mean solid wall.
- *
- * For example, `getBlankMap(1, 64)` would return a 64x64 grid of walls.
- * You'll often start map generation with this, then carve rooms and paths into it.
- *
- * Under the hood, it's just nested loops:
- *   - Outer loop: makes each row.
- *   - Inner loop: fills that row with numbers.
- *
- * It's a clean, reusable way to set up map data before doing anything more advanced.
- */
+/*
+How this file works:
+
+This function builds a square 2D grid (like 64x64 tiles) where every cell contains the same value.
+It's basically a way to lay down a blank map before doing anything fancy, like carving rooms or tunnels.
+You pick the value you want for every tile (like 0 for empty floor, 1 for solid wall).
+For example, getBlankMap(1, 64) gives you a 64x64 grid of walls.
+
+Under the hood, it's just classic nested loops:
+- The outer loop creates each row.
+- The inner loop fills that row with the value you provided.
+
+This is a straightforward way to set up a map before starting procedural generation or resetting the level.
+*/
+
+/*
+Math summary:
+- This approach uses nested loops to fill a 2D array, which is a common and reliable method in JavaScript[3][6][7].
+- Modern alternatives include using Array.from or map/fill for more concise code, e.g.:
+  Array.from({length: dimensions}, () => Array(dimensions).fill(num))
+- Both methods produce a grid where each cell is independently set, avoiding reference bugs.
+
+*/

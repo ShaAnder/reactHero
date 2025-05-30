@@ -18,13 +18,15 @@ export const useGameController = () => {
   const [exit, setExit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Loads the next level (generates a new map, spawn, and exit)
   const loadNextLevel = useCallback(async () => {
     setIsLoading(true);
 
     try {
-      // Simulate loading delay (e.g., show loading screen, fade transition, etc.)
+      // Simulate a loading delay (could show a loading screen or transition)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      // Generate a new dungeon map and get spawn/exit positions
       const {
         map,
         start: spawnPosition,
@@ -42,11 +44,12 @@ export const useGameController = () => {
     }
   }, []);
 
-  // Load the first level on mount
+  // Load the first level when the component mounts
   useEffect(() => {
     loadNextLevel();
   }, [loadNextLevel]);
 
+  // Return all game state and the function to load the next level
   return {
     level,
     map,
@@ -56,3 +59,14 @@ export const useGameController = () => {
     loadNextLevel,
   };
 };
+
+/*
+How this file works:
+
+This React hook manages the core state for a dungeon-crawling game. It tracks the current level, the generated map, the player spawn and exit positions, and whether the game is currently loading. When called, loadNextLevel generates a new dungeon map (with spawn and exit) and increments the level. The hook automatically loads the first level on mount, and exposes all state along with the loadNextLevel function so you can trigger a new level from your UI or game logic.
+
+Typical usage:
+- Call useGameController() in your main game component.
+- Use the returned state and methods to render the map, player, and handle level transitions.
+
+*/

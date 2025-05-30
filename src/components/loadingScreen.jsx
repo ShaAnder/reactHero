@@ -61,3 +61,8 @@ function LoadingScreen({ level, map, spawn, exit }) {
 }
 
 export default LoadingScreen;
+
+/*
+ * This component was originally a test loading screen for ensuring maps were being generated.
+ * Now it stays as it may be repurposed into a map item or for other uses in the future.
+ */

@@ -9,4 +9,4 @@ export const PLAYER_SPEED = 180;
 export const PLAYER_ROTATION_SPEED = 250 * (Math.PI / 180);
 
 // mouse sensitivity for mouse users
-export const MOUSE_SENSITIVITY = 0.02;
+export const MOUSE_SENSITIVITY = 0.002;

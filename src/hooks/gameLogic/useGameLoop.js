@@ -100,13 +100,14 @@ export const useGameLoop = (updateCallback, renderCallback) => {
   return fps;
 };
 
-/**
- * How This Function Works:
- *
- * - useGameLoop creates a stable animation loop using requestAnimationFrame.
- * - It accumulates elapsed time to run fixed timestep updates (~60fps) for consistent game logic.
- * - By separating update and render callbacks, it allows you to keep logic and drawing decoupled.
- * - The accumulator prevents issues if frames take longer, running multiple updates if needed.
- * - It calculates real FPS by counting frames every second, exposing that value for performance monitoring.
- * - Cleanup cancels the animation frame when the component unmounts to prevent leaks.
- */
+/*
+How this file works:
+
+This custom React hook sets up a fixed-timestep game loop using requestAnimationFrame, which is perfect for games that need consistent updates and smooth rendering. The hook uses an accumulator to keep track of leftover time between frames, ensuring that game logic updates (updateCallback) and rendering (renderCallback) happen at a stable rate (typically 60fps). FPS is tracked and updated every second for performance monitoring. On mount, the loop starts automatically, and it cleans up on unmount to prevent memory leaks.
+
+Math summary:
+- FRAME_DURATION is the fixed time step (e.g., 16.67ms for 60fps).
+- The accumulator pattern ensures that even if a frame is delayed, logic updates catch up smoothly.
+- FPS is calculated by counting frames within each second.
+
+*/

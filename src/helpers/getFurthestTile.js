@@ -43,32 +43,18 @@ export const getFurthestFloor = (map, start, minDistance = 20) => {
   return start;
 };
 
-/**
- * How this function works:
- *
- * Inputs:
- * - A 2D map grid with 0 = floor, 1 = wall
- * - A start position like [y, x] (e.g. player spawn)
- * - A minimum distance (default 20 tiles)
- *
- * Goal:
- * - Find all open floor tiles that are at least `minDistance` away from `start`
- * - Return one of them at random
- * - If none are far enough, return the start itself
- *
- * Step-by-step:
- * 1. Deconstruct the start position into sy (row) and sx (col).
- * 2. Create an empty `validTiles` array.
- * 3. Loop through the entire map grid:
- *    - For each tile that is walkable (value 0):
- *      - Measure the straight-line distance (Euclidean) to the start point.
- *      - If it meets or exceeds the minimum, store its coordinates.
- * 4. If we found at least one valid tile:
- *    - Pick a random one using Math.random and return it.
- * 5. Otherwise, return the starting point as a fallback.
- *
- * Why this is useful:
- * - Ensures objectives (like exits or enemies) aren’t too close to spawn
- * - Encourages exploration and longer gameplay loops
- * - Adds randomness while still being gameplay-safe
- */
+/*
+How this file works:
+
+This function searches the entire map for floor tiles (value 0) that are at least a certain distance away from the given start point. It measures the straight-line (Euclidean) distance from each floor tile to the start, collects all tiles that meet or exceed the minimum distance, and then picks one at random. If no such tile exists, it simply returns the start point as a safe fallback.
+
+Math summary:
+- Uses the classic Euclidean distance formula: sqrt((x2-x1)^2 + (y2-y1)^2).
+- Randomly selects from the valid options using Math.random and Math.floor.
+
+Why this is useful:
+- Makes sure objectives, exits, or enemies aren’t too close to the player’s spawn.
+- Encourages exploration and ensures a more interesting, spread-out map.
+- Adds randomness but always guarantees a valid location.
+
+*/

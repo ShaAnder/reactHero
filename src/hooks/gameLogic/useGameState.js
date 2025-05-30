@@ -7,6 +7,7 @@ import {
 import { getIsWall } from "../../helpers/getIsWall";
 import { FOV_ANGLE, TILE_SIZE } from "../../constants/gameConfig";
 import { getCameraPlane } from "../../helpers/getCameraPlane";
+import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
 
 /**
  * useGameState
@@ -25,7 +26,7 @@ export const useGameState = (map, spawn) => {
   const [player, setPlayer] = useState(() => ({
     x: spawn ? spawn[0] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
     y: spawn ? spawn[1] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
-    angle: 0,
+    angle: setPlayerFacingInward(spawn, map),
     moveSpeed: PLAYER_SPEED,
     rotationSpeed: PLAYER_ROTATION_SPEED,
   }));
@@ -37,10 +38,10 @@ export const useGameState = (map, spawn) => {
         ...prev,
         x: spawn[0] * TILE_SIZE + TILE_SIZE / 2,
         y: spawn[1] * TILE_SIZE + TILE_SIZE / 2,
-        angle: 0,
+        angle: setPlayerFacingInward(spawn, map),
       }));
     }
-  }, [spawn]);
+  }, [spawn, map]);
 
   // --- Canvas Ref ---
   const canvasRef = useRef(null);
@@ -113,16 +114,19 @@ export const useGameState = (map, spawn) => {
     canvasRef,
   };
 };
-/**
- * How These Functions Work:
- *
- * - useGameState initializes and manages the player's position, direction, and movement speed using React state.
- * - It uses a custom hook, usePlayerControls, to track keyboard and mouse inputs, storing active keys in a ref.
- * - The updateGameState function is called every frame with the time elapsed (deltaTime).
- *   It updates the player's angle (rotation) and position based on which keys are pressed, factoring in speed and deltaTime.
- * - Before moving, updateGameState checks for collisions with walls separately on the X and Y axes to allow smooth sliding along walls.
- * - The angle is wrapped between 0 and 2π to keep rotation values consistent.
- * - getCameraPlane (external) calculates a vector perpendicular to the player’s direction, scaled by the field of view and adjusted for aspect ratio,
- *   which is essential for raycasting to determine the player's visible area.
- * - The hook returns the current player state, camera plane vectors, the update function, and a canvas ref for mouse input handling.
- */
+
+/*
+How these functions work:
+
+- useGameState initializes and manages the player's position, direction, and movement speed using React state.
+- It uses a custom hook, usePlayerControls, to track keyboard and mouse inputs, storing active keys in a ref.
+- The updateGameState function is called every frame with the time elapsed (deltaTime).
+  It updates the player's angle (rotation) and position based on which keys are pressed, factoring in speed and deltaTime.
+- Before moving, updateGameState checks for collisions with walls separately on the X and Y axes to allow smooth sliding along walls.
+- The angle is wrapped between 0 and 2π to keep rotation values consistent.
+- getCameraPlane (external) calculates a vector perpendicular to the player’s direction, scaled by the field of view and adjusted for aspect ratio,
+  which is essential for raycasting to determine the player's visible area.
+- The hook returns the current player state, camera plane vectors, the update function, and a canvas ref for mouse input handling.
+
+
+*/

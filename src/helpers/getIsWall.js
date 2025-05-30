@@ -25,13 +25,13 @@ export const getIsWall = (x, y, map) => {
   return map[tileY][tileX] === 1;
 };
 
-/**
- * How this works:
- *
- * - You pass in a position in pixels (like player.x, player.y).
- * - First we convert it to grid coordinates using Math.floor(x / TILE_SIZE).
- * - Then we check:
- *   1. Is it inside the grid? If not, we treat it like a wall (so you can't walk outside the map).
- *   2. If it is inside the map, we check whether the tile at that location is a wall.
- * - This lets us use the map array directly for collision detection.
- */
+/*
+How this file works:
+
+This function is used for collision detection in a tile-based game. You give it a position in pixel coordinates (like the player or a ray), and it converts that into tile grid coordinates using Math.floor(x / TILE_SIZE). It then checks if the tile is a wall (value 1) or a floor (value 0). If the position is outside the map bounds, it treats it as a wall to prevent the player or rays from moving or drawing outside the map.
+
+Math summary:
+- Converts pixel coordinates to tile indices by dividing by TILE_SIZE and flooring the result.
+- Checks map boundaries and tile value for collision logic.
+
+*/

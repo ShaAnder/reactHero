@@ -45,5 +45,4 @@ Math summary:
 - The function uses Math.floor to make sure the room dimensions are whole tiles.
 - The final center is recalculated in case the room got shifted by the clamping.
 
-You’d use this as part of a procedural dungeon generator, often combined with other algorithms to connect the rooms with corridors and fill out the map[4][5][7].
 */

@@ -4,19 +4,21 @@ import { useGameLoop } from "./hooks/gameLogic/useGameLoop";
 import { useGameState } from "./hooks/gameLogic/useGameState";
 import { render as gameRender } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
-
 import { useGameController } from "./hooks/gameLogic/useGameController";
-
 import LoadingScreen from "./components/loadingScreen";
 
 const App = () => {
+  // Game controller manages map, spawn, exit, level, and loading state
   const { map, spawn, exit, level, isLoading, loadNextLevel } =
     useGameController();
 
+  // Game state hook manages player position, movement, and canvas ref
   const { player, updateGameState, canvasRef } = useGameState(map, spawn);
 
+  // Toggle for displaying FPS counter
   const [showFps, setShowFps] = useState(true);
 
+  // Render function for the game loop
   const render = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -27,6 +29,7 @@ const App = () => {
     gameRender(context, player, map);
   };
 
+  // Custom hook to run the game loop and get current FPS
   const fps = useGameLoop(updateGameState, render);
 
   return (
@@ -37,6 +40,7 @@ const App = () => {
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
+        zIndex: 10,
       }}
     >
       <Canvas
@@ -44,6 +48,7 @@ const App = () => {
         width={WINDOW_WIDTH}
         height={WINDOW_HEIGHT}
         style={{ border: "1px solid black" }}
+        onClick={() => console.log("React onClick fired!")}
       />
       {showFps && (
         <div
@@ -64,3 +69,18 @@ const App = () => {
 };
 
 export default App;
+
+/*
+How this file works:
+
+This is the main React app for your raycasting game. It wires together all the core hooks and components:
+
+- useGameController handles map generation, level state, and loading transitions.
+- useGameState manages the player's position, movement, and camera logic.
+- useGameLoop runs the fixed-timestep game loop, calling updateGameState and render each frame, and tracks FPS.
+- The Canvas component is where the game is drawn. The canvasRef is passed down for direct drawing.
+- The render function clears the canvas and calls the main game renderer to draw the 3D view and minimap.
+- While the map is loading, a LoadingScreen is displayed.
+- An FPS counter is shown in the corner if showFps is true.
+
+*/

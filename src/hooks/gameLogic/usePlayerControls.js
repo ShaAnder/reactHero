@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { MOUSE_SENSITIVITY } from "../../constants/playerConfig";
+import { DEFAULT_KEY_BINDINGS } from "../../constants/playerControlsConfig";
 
 /**
  * usePlayerControls
@@ -10,7 +11,12 @@ import { MOUSE_SENSITIVITY } from "../../constants/playerConfig";
  *
  * It sets up event listeners and returns a `keys` ref that tracks which keys are held down.
  */
-export const usePlayerControls = (canvasRef, setPlayer) => {
+export const usePlayerControls = (
+  canvasRef,
+  setPlayer,
+  keyBindings,
+  onToggleMap
+) => {
   // --- Track pressed keys ---
   const keys = useRef({
     up: false,
@@ -19,58 +25,37 @@ export const usePlayerControls = (canvasRef, setPlayer) => {
     right: false,
     strafeLeft: false,
     strafeRight: false,
+    map: false,
   });
 
   // --- Keyboard Controls ---
   useEffect(() => {
     const handleKeyDown = (e) => {
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-          keys.current.up = true;
-          break;
-        case "ArrowDown":
-        case "s":
-          keys.current.down = true;
-          break;
-        case "ArrowLeft":
-          keys.current.left = true;
-          break;
-        case "ArrowRight":
-          keys.current.right = true;
-          break;
-        case "a":
-          keys.current.strafeLeft = true;
-          break;
-        case "d":
-          keys.current.strafeRight = true;
-          break;
+      const key = e.key.toLowerCase();
+
+      if (key === keyBindings.up) keys.current.up = true;
+      else if (key === keyBindings.down) keys.current.down = true;
+      else if (key === keyBindings.left) keys.current.left = true;
+      else if (key === keyBindings.right) keys.current.right = true;
+      else if (key === keyBindings.strafeLeft) keys.current.strafeLeft = true;
+      else if (key === keyBindings.strafeRight) keys.current.strafeRight = true;
+      else if (key === keyBindings.map) {
+        if (!keys.current.map) {
+          keys.current.map = true;
+          if (onToggleMap) onToggleMap();
+        }
       }
     };
 
     const handleKeyUp = (e) => {
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-          keys.current.up = false;
-          break;
-        case "ArrowDown":
-        case "s":
-          keys.current.down = false;
-          break;
-        case "ArrowLeft":
-          keys.current.left = false;
-          break;
-        case "ArrowRight":
-          keys.current.right = false;
-          break;
-        case "a":
-          keys.current.strafeLeft = false;
-          break;
-        case "d":
-          keys.current.strafeRight = false;
-          break;
-      }
+      const key = e.key.toLowerCase();
+      if (key === keyBindings.up) keys.current.up = false;
+      if (key === keyBindings.down) keys.current.down = false;
+      if (key === keyBindings.left) keys.current.left = false;
+      if (key === keyBindings.right) keys.current.right = false;
+      if (key === keyBindings.strafeLeft) keys.current.strafeLeft = false;
+      if (key === keyBindings.strafeRight) keys.current.strafeRight = false;
+      if (key === keyBindings.map) keys.current.map = false;
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -80,7 +65,7 @@ export const usePlayerControls = (canvasRef, setPlayer) => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [keyBindings, onToggleMap]);
 
   // --- Mouse Controls ---
   useEffect(() => {

@@ -5,18 +5,30 @@ import { useGameState } from "./hooks/gameLogic/useGameState";
 import { render as gameRender } from "./engine/renderer";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "./constants/gameConfig";
 import { useGameController } from "./hooks/gameLogic/useGameController";
-import LoadingScreen from "./components/loadingScreen";
+import Map from "./components/canvas/Map";
+import { DEFAULT_MAP_CONFIG } from "./constants/gameConfig";
+import { DEFAULT_KEY_BINDINGS } from "./constants/playerControlsConfig";
+
+const ENVIRONMENTS = Object.keys(DEFAULT_MAP_CONFIG.environmentPresets);
 
 const App = () => {
-  // Game controller manages map, spawn, exit, level, and loading state
-  const { map, spawn, exit, level, isLoading, loadNextLevel } =
-    useGameController();
+  //--- STATE ---//
 
-  // Game state hook manages player position, movement, and canvas ref
-  const { player, updateGameState, canvasRef } = useGameState(map, spawn);
+  // map modal
+  const [openMap, setOpenMap] = useState(false);
+
+  // set our enviornment for choosing dungeon
+  const [environment, setEnvironment] = useState(
+    DEFAULT_MAP_CONFIG.environment
+  );
+
+  // Regen key for forcing remount/regenerate when we select a new map
+  const [regenKey, setRegenKey] = useState(0);
 
   // Toggle for displaying FPS counter
   const [showFps, setShowFps] = useState(true);
+
+  //--- FUNCTIONS ---//
 
   // Render function for the game loop
   const render = () => {
@@ -29,20 +41,55 @@ const App = () => {
     gameRender(context, player, map);
   };
 
+  const toggleMap = () => {
+    setOpenMap((open) => !open);
+  };
+
+  //--- HOOKS ---//
+
+  // Game controller manages map, spawn, exit, level, and loading state
+  const { map, spawn } = useGameController({ environment, regenKey });
+
+  // Game state hook manages player position, movement, and canvas ref
+  const { player, updateGameState, canvasRef } = useGameState(
+    map,
+    spawn,
+    DEFAULT_KEY_BINDINGS,
+    toggleMap
+  );
+
   // Custom hook to run the game loop and get current FPS
   const fps = useGameLoop(updateGameState, render);
 
   return (
     <div
       style={{
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
-        zIndex: 10,
       }}
     >
+      {/* Environment Selector */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ marginRight: 8 }}>Environment:</label>
+        <select
+          value={environment}
+          onChange={(e) => setEnvironment(e.target.value)}
+          style={{ marginRight: 16 }}
+        >
+          {ENVIRONMENTS.map((env) => (
+            <option key={env} value={env}>
+              {env}
+            </option>
+          ))}
+        </select>
+        <button onClick={() => setRegenKey((prev) => prev + 1)}>
+          Generate Dungeon
+        </button>
+      </div>
       <Canvas
         ref={canvasRef}
         width={WINDOW_WIDTH}
@@ -50,6 +97,27 @@ const App = () => {
         style={{ border: "1px solid black" }}
         onClick={() => console.log("React onClick fired!")}
       />
+      {openMap && (
+        <div
+          style={{
+            position: "absolute", // key for overlaying
+            top: "50%",
+            left: "50%",
+            width: 250,
+            height: 250,
+            transform: "translate(-50%, -50%)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            pointerEvents: "auto",
+            zIndex: 100,
+            background: "rgba(0,0,0,0.6)",
+          }}
+          onClick={toggleMap}
+        >
+          <Map map={map} spawn={spawn} exit={map?.exit} />
+        </div>
+      )}
       {showFps && (
         <div
           style={{

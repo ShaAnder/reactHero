@@ -20,7 +20,7 @@ import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
  * - Mouse/keyboard input
  * - Camera plane math for raycasting (using external helper)
  */
-export const useGameState = (map, spawn) => {
+export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
   // --- Player State ---
   // Initialize player position from spawn (tile coordinates to pixel coordinates)
   const [player, setPlayer] = useState(() => ({
@@ -47,7 +47,12 @@ export const useGameState = (map, spawn) => {
   const canvasRef = useRef(null);
 
   // --- Input Handling ---
-  const keys = usePlayerControls(canvasRef, setPlayer);
+  const keys = usePlayerControls(
+    canvasRef,
+    setPlayer,
+    keyBindings,
+    onMapToggle
+  );
 
   /**
    * updateGameState

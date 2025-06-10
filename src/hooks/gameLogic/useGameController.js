@@ -11,7 +11,7 @@ import { DEFAULT_MAP_CONFIG } from "../../constants/gameConfig";
  *
  * Handles level loading and transitions.
  */
-export const useGameController = () => {
+export const useGameController = ({ environment, regenKey }) => {
   const [level, setLevel] = useState(1);
   const [map, setMap] = useState(null);
   const [spawn, setSpawn] = useState(null);
@@ -26,12 +26,26 @@ export const useGameController = () => {
       // Simulate a loading delay (could show a loading screen or transition)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      // get our preset for the selected environment
+      const preset =
+        DEFAULT_MAP_CONFIG.environmentPresets[environment] ||
+        DEFAULT_MAP_CONFIG.environmentPresets["dungeon"];
+
+      // then create our config
+      const config = {
+        ...DEFAULT_MAP_CONFIG,
+        ...preset,
+        environment,
+        // Ensure walkerPresets are included for the generator
+        walkerPresets: preset.walkerPresets,
+      };
+
       // Generate a new dungeon map and get spawn/exit positions
       const {
         map,
         start: spawnPosition,
         exit: exitPosition,
-      } = await generateMap(DEFAULT_MAP_CONFIG);
+      } = await generateMap(config);
 
       setMap(map);
       setSpawn(spawnPosition);
@@ -42,12 +56,12 @@ export const useGameController = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [environment]);
 
   // Load the first level when the component mounts
   useEffect(() => {
     loadNextLevel();
-  }, [loadNextLevel]);
+  }, [loadNextLevel, environment, regenKey]);
 
   // Return all game state and the function to load the next level
   return {

@@ -19,17 +19,55 @@ export const TARGET_FPS = 60;
 export const FRAME_DURATION = 1000 / TARGET_FPS;
 
 // MAP GENERATION CONFIG
-// This object holds the default settings for generating a map.
-// These are hardcoded for now, but in the future users will be able to pick their own options.
+// Default map config for creating our map, we want diff presents for the generator based on
+// what the user wants to play.
 export const DEFAULT_MAP_CONFIG = {
-  // Map will be 64x64 tiles
-  dimensions: 64,
-  // The generator will try to create up to 20 rooms
-  numRooms: 15,
-  // This limits how many steps the random walker can take when making tunnels
-  maxTunnels: 100,
-  // Smallest possible room size
-  roomMinSize: 3,
-  // Largest possible room size
-  roomMaxSize: 8,
+  dimensions: 65,
+  environment: "dungeon", // selected by user default dungeon
+  environmentPresets: {
+    dungeon: {
+      numRooms: 15,
+      roomMinSize: 3,
+      roomMaxSize: 7,
+      walkerPresets: {
+        branchChance: 0.1,
+        loopChance: 0.05,
+        minCorridor: 2,
+        maxCorridor: 6,
+      },
+    },
+    forest: {
+      numRooms: 2,
+      roomMinSize: 12,
+      roomMaxSize: 12,
+      walkerPresets: {
+        branchChance: 0.35,
+        loopChance: 0.2,
+        minCorridor: 1,
+        maxCorridor: 4,
+      },
+    },
+    cave: {
+      numRooms: 12,
+      roomMinSize: 6,
+      roomMaxSize: 14,
+      walkerPresets: {
+        branchChance: 0.05,
+        loopChance: 0.01,
+        minCorridor: 4,
+        maxCorridor: 8,
+      },
+    },
+    castle: {
+      numRooms: 12,
+      roomMinSize: 4,
+      roomMaxSize: 6,
+      walkerPresets: {
+        branchChance: 0,
+        loopChance: 0,
+        minCorridor: 3,
+        maxCorridor: 5,
+      },
+    },
+  },
 };

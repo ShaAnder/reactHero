@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-function LoadingScreen({ level, map, spawn, exit }) {
+function Map({ map, spawn, exit }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -31,36 +31,20 @@ function LoadingScreen({ level, map, spawn, exit }) {
   }, [map, spawn, exit]);
 
   return (
-    <div
-      style={{
-        fontFamily: "monospace",
-        fontSize: "20px",
-        color: "white",
-        backgroundColor: "black",
-        width: "100%",
-        height: "98vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div>Loading Level {level}...</div>
-      {map && (
-        <canvas
-          ref={canvasRef}
-          style={{
-            marginTop: 20,
-            border: "2px solid white",
-            imageRendering: "pixelated",
-          }}
-        />
-      )}
-    </div>
+    map && (
+      <canvas
+        ref={canvasRef}
+        style={{
+          border: "2px solid white",
+          imageRendering: "pixelated",
+          display: "block",
+        }}
+      />
+    )
   );
 }
 
-export default LoadingScreen;
+export default Map;
 
 /*
  * This component was originally a test loading screen for ensuring maps were being generated.

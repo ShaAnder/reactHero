@@ -24,11 +24,12 @@ export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
   const numRooms = options.numRooms;
   const roomMinSize = options.roomMinSize;
   const roomMaxSize = options.roomMaxSize;
+  const walkerPresets = options.walkerPresets;
 
   let map, start, exit;
   let valid = false;
   let attempts = 0;
-  const maxAttempts = 10; // prevent infinite retry loops
+  const maxAttempts = 60; // prevent infinite retry loops
 
   while (!valid && attempts < maxAttempts) {
     attempts++;
@@ -81,12 +82,8 @@ export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
       continue;
     }
 
-    await initRandomWalker(map, roomCenters, {
-      branchChance: 0.1,
-      loopChance: 0.05,
-      minCorridor: 2,
-      maxCorridor: 6,
-    });
+    // --- USE THE USER'S WALKER PRESET HERE ---
+    await initRandomWalker(map, roomCenters, walkerPresets);
 
     if (!map || !Array.isArray(map)) {
       console.warn("Random walker failed to generate map properly.");
@@ -107,7 +104,7 @@ export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
       continue;
     }
 
-    // --- NEW: Ensure spawn and exit are on walkable tiles ---
+    // --- Ensure spawn and exit are on walkable tiles ---
     if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
       console.warn("Spawn or exit is not on a walkable tile. Retrying...");
       continue;

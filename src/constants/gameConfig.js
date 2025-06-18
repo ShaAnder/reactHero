@@ -23,8 +23,19 @@ export const FRAME_DURATION = 1000 / TARGET_FPS;
 // what the user wants to play.
 export const DEFAULT_MAP_CONFIG = {
   dimensions: 65,
-  environment: "dungeon", // selected by user default dungeon
+  environment: "dungeon", // default
   environmentPresets: {
+    forest: {
+      numRegions: 10,
+      regionMinSize: 6,
+      regionMaxSize: 12,
+      generationStyle: "voronoi",
+    },
+    cave: {
+      fillProbability: 0.45,
+      caIterations: 5,
+      generationStyle: "cellular_automata",
+    },
     dungeon: {
       numRooms: 15,
       roomMinSize: 3,
@@ -34,40 +45,16 @@ export const DEFAULT_MAP_CONFIG = {
         loopChance: 0.05,
         minCorridor: 2,
         maxCorridor: 6,
+        allowDiagonals: false,
       },
-    },
-    forest: {
-      numRooms: 2,
-      roomMinSize: 12,
-      roomMaxSize: 12,
-      walkerPresets: {
-        branchChance: 0.35,
-        loopChance: 0.2,
-        minCorridor: 1,
-        maxCorridor: 4,
-      },
-    },
-    cave: {
-      numRooms: 12,
-      roomMinSize: 6,
-      roomMaxSize: 14,
-      walkerPresets: {
-        branchChance: 0.05,
-        loopChance: 0.01,
-        minCorridor: 4,
-        maxCorridor: 8,
-      },
+      generationStyle: "rooms_corridors",
     },
     castle: {
-      numRooms: 12,
-      roomMinSize: 4,
-      roomMaxSize: 6,
-      walkerPresets: {
-        branchChance: 0,
-        loopChance: 0,
-        minCorridor: 3,
-        maxCorridor: 5,
-      },
+      numRegions: 8,
+      regionMinSize: 6,
+      regionMaxSize: 10,
+      generationStyle: "voronoi",
+      regular: true, // for more grid-like rooms
     },
   },
 };

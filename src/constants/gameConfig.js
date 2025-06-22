@@ -22,39 +22,57 @@ export const FRAME_DURATION = 1000 / TARGET_FPS;
 // Default map config for creating our map, we want diff presents for the generator based on
 // what the user wants to play.
 export const DEFAULT_MAP_CONFIG = {
-  dimensions: 65,
+  dimensions: 64,
   environment: "dungeon", // default
   environmentPresets: {
     forest: {
-      numRegions: 10,
-      regionMinSize: 6,
-      regionMaxSize: 12,
-      generationStyle: "voronoi",
+      numRegions: 21,
+      clearingSize: [1, 3],
+      voronoiRelaxation: 10,
+      walkerPresets: {
+        branchChance: 0.05,
+        loopChance: 0.08,
+        minCorridor: 3,
+        maxCorridor: 5,
+        allowDiagonals: true,
+      },
     },
-    cave: {
-      fillProbability: 0.45,
+    cavern: {
+      fillProbability: 0.55,
       caIterations: 5,
-      generationStyle: "cellular_automata",
+      useTunnels: true,
+      walkerPresets: {
+        branchChance: 0.15,
+        loopChance: 0.08,
+        minCorridor: 2,
+        maxCorridor: 4,
+        allowDiagonals: false,
+      },
     },
     dungeon: {
       numRooms: 15,
       roomMinSize: 3,
-      roomMaxSize: 7,
+      roomMaxSize: 6,
       walkerPresets: {
-        branchChance: 0.1,
-        loopChance: 0.05,
+        branchChance: 0.12,
+        loopChance: 0.07,
         minCorridor: 2,
         maxCorridor: 6,
         allowDiagonals: false,
       },
-      generationStyle: "rooms_corridors",
     },
     castle: {
-      numRegions: 8,
-      regionMinSize: 6,
-      regionMaxSize: 10,
-      generationStyle: "voronoi",
-      regular: true, // for more grid-like rooms
+      numRegions: 12,
+      regionMinSize: 3,
+      regionMaxSize: 7,
+      roomPlacement: "bsp",
+      walkerPresets: {
+        branchChance: 0.05,
+        loopChance: 0.03,
+        minCorridor: 4,
+        maxCorridor: 10,
+        allowDiagonals: false,
+      },
     },
   },
 };

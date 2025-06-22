@@ -48,7 +48,7 @@ const App = () => {
   //--- HOOKS ---//
 
   // Game controller manages map, spawn, exit, level, and loading state
-  const { map, spawn } = useGameController({ environment, regenKey });
+  const { map, spawn, exit } = useGameController({ environment, regenKey });
 
   // Game state hook manages player position, movement, and canvas ref
   const { player, updateGameState, canvasRef } = useGameState(
@@ -115,7 +115,7 @@ const App = () => {
           }}
           onClick={toggleMap}
         >
-          <Map map={map} spawn={spawn} exit={map?.exit} />
+          <Map map={map} spawn={spawn} exit={exit} />
         </div>
       )}
       {showFps && (

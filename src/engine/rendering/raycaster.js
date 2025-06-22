@@ -16,6 +16,11 @@ export const rayCaster = ({
   map,
   context,
 }) => {
+  // quick check to see if map is ready
+  if (!map || !Array.isArray(map) || !map.length) {
+    return;
+  }
+
   // Controls how sharp the image is (1 pixel per ray is sharpest)
   const RAY_STEP = 1;
 
@@ -77,7 +82,26 @@ export const rayCaster = ({
       }
 
       // Check if the ray hit a wall
-      if (map[mapY] && map[mapY][mapX] === 1) hit = true;
+      if (
+        map[mapY] != null &&
+        Array.isArray(map[mapY]) &&
+        map[mapY][mapX] === 1
+      ) {
+        hit = true;
+      }
+
+      // out of bounds
+      if (map[mapY] && map[mapY][mapX] != null && map[mapY][mapX] === 1) {
+        hit = true;
+      }
+
+      // debugging
+      if (!map[mapY] || !Array.isArray(map[mapY])) {
+        console.warn(`Row ${mapY} is missing or not an array:`, map[mapY]);
+      }
+      if (map[mapY] && map[mapY][mapX] == null) {
+        console.warn(`Cell [${mapY}][${mapX}] is missing:`, map[mapY][mapX]);
+      }
     }
 
     // --- 6. Get the perpendicular distance to the wall (to avoid fisheye effect) ---

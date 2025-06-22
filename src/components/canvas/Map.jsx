@@ -16,7 +16,6 @@ function Map({ map, spawn, exit }) {
       for (let x = 0; x < map[0].length; x++) {
         // Default: walkable = white, wall = black
         let color = map[y][x] === 1 ? "black" : "white";
-
         // Highlight spawn and exit
         if (spawn && x === spawn[0] && y === spawn[1]) {
           color = "limegreen";

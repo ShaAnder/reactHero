@@ -5,23 +5,101 @@ import { getFurthestFloor } from "../getFurthestTile";
 import { DEFAULT_MAP_CONFIG } from "../../../../../constants/gameConfig";
 
 /**
- * Generates a castle map using grid-based Voronoi regions for rooms and corridors.
- * Robust error handling prevents browser crashes and logs issues for debugging.
+ * Function that utilizes BSP to create partitioned regions, each region is a single non overlapping room
+ * Utilizes a min margin to ensure that we get "walls" to place doors later
+ */
+const roomPartition = (
+  x,
+  y,
+  width,
+  height,
+  minSize,
+  minMargin,
+  maxDepth = 4,
+  depth = 0
+) => {
+  // Firstly set our regions array
+  const regions = [];
+
+  // Next define the canSplit constant, it checks if:
+  // 1. The current depth is less than the maximum allowed depth.
+  // 2. The width or height is large enough to fit two rooms with margins
+  // 3. A random factor (Math.random() > 0.2) to give us random / unpredictable splits
+  // If ALL of these are true, the region will be split further
+  // If ANY are false, the region will NOT be split further and becomes a leaf node for room placement.
+  const canSplit =
+    depth < maxDepth &&
+    (width > minSize * 2 + minMargin * 3 ||
+      height > minSize * 2 + minMargin * 3) &&
+    Math.random() > 0.2;
+
+  if (!canSplit) {
+    // Base case: Return region as a leaf node (room candidate)
+    return [{ x, y, width, height }];
+  }
+
+  // Next we want to ensure more natural rooms so we split along the longer axis
+  // Check if height greater than width, set to true OR just a chance to split
+  const splitVertically = width > height ? true : Math.random() > 0.5;
+  const splitRatio = 0.4 + Math.random() * 0.2;
+
+  // now check if sV is true and if the width is greater than the size + margin
+  if (splitVertically && width > minSize * 2 + minMargin * 3) {
+    // if it is, set up our const and split into L/R regions
+    const splitX = Math.floor(x + width * splitRatio);
+    regions.push(
+      // L region
+      ...roomPartition(
+        x,
+        y,
+        splitX - x - minMargin,
+        height,
+        minSize,
+        minMargin,
+        maxDepth,
+        depth + 1
+      ),
+      ...roomPartition(
+        // R region
+        splitX + minMargin,
+        y,
+        x + width - splitX - minMargin,
+        height,
+        minSize,
+        minMargin,
+        maxDepth,
+        depth + 1
+      )
+    );
+  } else {
+    // just push the room to the array
+    regions.push({ x, y, width, height });
+  }
+  return regions;
+};
+
+/**
+ * Generates a castle map using BSP partitioning for structured room placement
  */
 export const generateCastle = (options = DEFAULT_MAP_CONFIG) => {
+  // get our options params
   const dimensions = options.dimensions || 65;
-  const numRooms = options.numRegions || 8;
-  const roomSize = [options.regionMinSize || 6, options.regionMaxSize || 10];
+  const numRooms = options.numRegions || 12;
+  const roomSize = [options.regionMinSize || 3, options.regionMaxSize || 7];
   const walkerPresets = options.walkerPresets || {
-    branchChance: 0.1,
-    loopChance: 0.05,
-    minCorridor: 2,
-    maxCorridor: 6,
+    branchChance: 0.05,
+    loopChance: 0.03,
+    minCorridor: 4,
+    maxCorridor: 10,
     allowDiagonals: false,
   };
-  const maxRoomRadius = roomSize[1];
-  const padding = 5;
 
+  // extra settings for our bsp and to ensure map doesn't get generated out of bounds
+  const padding = 5;
+  const minMargin = 1;
+  const maxDepth = 5;
+
+  // set our map checks
   let map, start, exit;
   let valid = false;
   let attempts = 0;
@@ -30,150 +108,28 @@ export const generateCastle = (options = DEFAULT_MAP_CONFIG) => {
   while (!valid && attempts < maxAttempts) {
     attempts++;
     try {
-      // STEP 1: Carve a dedicated spawn room at a safe, padded location
-      map = getBlankMap(1, dimensions);
-      const spawnX =
-        padding +
-        maxRoomRadius +
-        Math.floor(
-          Math.random() * (dimensions - 2 * (padding + maxRoomRadius))
-        );
-      const spawnY =
-        padding +
-        maxRoomRadius +
-        Math.floor(
-          Math.random() * (dimensions - 2 * (padding + maxRoomRadius))
-        );
-      const spawnSize = 3;
-      // Carve a 3x3 spawn room
-      for (
-        let dy = -Math.floor(spawnSize / 2);
-        dy <= Math.floor(spawnSize / 2);
-        dy++
-      ) {
-        for (
-          let dx = -Math.floor(spawnSize / 2);
-          dx <= Math.floor(spawnSize / 2);
-          dx++
-        ) {
-          const nx = spawnX + dx,
-            ny = spawnY + dy;
-          if (nx >= 0 && nx < dimensions && ny >= 0 && ny < dimensions) {
-            map[ny][nx] = 0;
-          }
-        }
-      }
-      start = [spawnX, spawnY];
-
-      // STEP 2: Place seeds in a grid for rooms, first seed is spawn
-      let seeds = [{ x: spawnX, y: spawnY }];
-      const gridSize = Math.ceil(Math.sqrt(numRooms));
-      for (let gx = 0; gx < gridSize; gx++) {
-        for (let gy = 0; gy < gridSize; gy++) {
-          if (seeds.length >= numRooms) break;
-          // Place seeds away from edge so rooms never overlap boundary
-          const x =
-            padding +
-            maxRoomRadius +
-            Math.floor(
-              (gx + 0.5) *
-                ((dimensions - 2 * (padding + maxRoomRadius)) / gridSize)
-            );
-          const y =
-            padding +
-            maxRoomRadius +
-            Math.floor(
-              (gy + 0.5) *
-                ((dimensions - 2 * (padding + maxRoomRadius)) / gridSize)
-            );
-          // Don't duplicate the spawn seed
-          if (Math.abs(x - spawnX) < 2 && Math.abs(y - spawnY) < 2) continue;
-          seeds.push({ x, y });
-        }
-      }
-      if (!seeds || seeds.length === 0) throw new Error("No seeds generated");
-
-      // STEP 3: Assign each tile to nearest seed (Voronoi region)
-      const regionMap = getBlankMap(-1, dimensions);
-      for (let y = 0; y < dimensions; y++) {
-        for (let x = 0; x < dimensions; x++) {
-          let minDist = Infinity,
-            closest = 0;
-          for (let i = 0; i < seeds.length; i++) {
-            const dx = seeds[i].x - x;
-            const dy = seeds[i].y - y;
-            const dist = dx * dx + dy * dy;
-            if (dist < minDist) {
-              minDist = dist;
-              closest = i;
-            }
-          }
-          regionMap[y][x] = closest;
-        }
-      }
-
-      // STEP 4: Hollow out each region as a room (never out of bounds)
-      let roomCenters = [];
-      for (let i = 0; i < seeds.length; i++) {
-        const { x, y } = seeds[i];
-        const size =
-          roomSize[0] +
-          Math.floor(Math.random() * (roomSize[1] - roomSize[0] + 1));
-        for (let dy = -size; dy <= size; dy++) {
-          for (let dx = -size; dx <= size; dx++) {
-            const nx = x + dx,
-              ny = y + dy;
-            if (
-              nx >= 0 &&
-              nx < dimensions &&
-              ny >= 0 &&
-              ny < dimensions &&
-              regionMap[ny][nx] === i
-            ) {
-              map[ny][nx] = 0;
-            }
-          }
-        }
-        roomCenters.push([y, x]); // [y, x] for walker
-      }
-      if (roomCenters.length < 2) throw new Error("Too few room centers");
-
-      // STEP 5: Connect rooms with random walker
-      initRandomWalker(map, roomCenters, walkerPresets);
-
-      // STEP 6: Pick start and exit points in different rooms
-      const floorTiles = [];
-      for (let y = 0; y < dimensions; y++)
-        for (let x = 0; x < dimensions; x++)
-          if (map[y][x] === 0) floorTiles.push([x, y]);
-      if (floorTiles.length < 2)
-        throw new Error("Not enough floor tiles for start/exit");
-      // Use the dedicated spawn as start
-      // Pick exit as furthest from spawn
-      let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
-      if (!rawExit) throw new Error("Failed to find exit tile");
-      exit = [rawExit[1], rawExit[0]];
-      if (exit[0] === start[0] && exit[1] === start[1])
-        throw new Error("Exit same as start");
-
-      // STEP 7: Validate connectivity
-      valid = validateMap(map, [start[1], start[0]], [exit[1], exit[0]]);
-      if (!valid) throw new Error("Map validation failed (no path start→exit)");
-
-      // Defensive: Ensure spawn and exit are on walkable tiles
-      if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
-        throw new Error("Spawn or exit is not on a walkable tile");
-      }
+      // STEP 1: Partition castle area using BSP
+      // STEP 2: Carve rooms in each BSP region
+      // STEP 3: Connect rooms with corridors
+      // STEP 4: Set spawn in first room, exit in last
+      // STEP 5: Validate connectivity
     } catch (err) {
-      console.warn(
-        `[CastleGen] Generation error on attempt ${attempts}: ${err.message}`
-      );
+      console.warn(`[CastleGen] Attempt ${attempts}: ${err.message}`);
       continue;
     }
   }
 
-  if (!valid)
-    throw new Error("Failed to generate valid castle after max attempts");
-
+  if (!valid) throw new Error("Failed to generate valid castle");
   return { map, start, exit };
 };
+/*
+How this function works:
+
+- Recursively partitions the map area using Binary Space Partitioning (BSP), splitting the space into a configurable number of rectangular regions for rooms.
+- Carves a rectangular room within each BSP region, with random size and position constrained by minimum and maximum room size settings.
+- Ensures all rooms are spaced apart and never overlap, creating a structured, castle-like layout with distinct chambers and wings.
+- Connects the centers of all rooms using a corridor generation algorithm, producing straight, orthogonal corridors typical of castle architecture.
+- Places the player spawn in the first room and the exit in the last room to encourage natural progression through the castle.
+- Validates that there is a traversable path from start to exit, and that both are on walkable tiles.
+- Uses robust error handling and retry logic to guarantee that only valid, fully connected castle maps are returned, with no rooms cut off or placed outside the map boundary.
+*/

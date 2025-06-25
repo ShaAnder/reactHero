@@ -26,7 +26,7 @@ const App = () => {
   const [regenKey, setRegenKey] = useState(0);
 
   // Toggle for displaying FPS counter
-  const [showFps, setShowFps] = useState(true);
+  const [showFps] = useState(true);
 
   //--- FUNCTIONS ---//
 

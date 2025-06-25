@@ -5,16 +5,7 @@
 // roomCenters: array of [y, x] pairs for each room's center
 // options: lets me tweak how much branching/looping happens and how long the corridors are
 
-export const initRandomWalker = (
-  map,
-  roomCenters,
-  options = {
-    branchChance: 0.1,
-    loopChance: 0.05,
-    minCorridor: 2,
-    maxCorridor: 6,
-  }
-) => {
+export const initRandomWalker = (map, roomCenters, options) => {
   const { branchChance, loopChance, minCorridor, maxCorridor } = options;
 
   const directions = [

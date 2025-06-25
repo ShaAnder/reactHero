@@ -1,8 +1,8 @@
-import { getBlankMap } from "../getBlankMap";
-import { validateMap } from "../validateMap";
-import { getFurthestFloor } from "../getFurthestTile";
-import { DEFAULT_MAP_CONFIG } from "../../../../../constants/gameConfig";
-import { caStep } from "../caStep";
+import { getBlankMap } from "../utils/getBlankMap";
+import { validateMap } from "../utils/validateMap";
+import { getFurthestFloor } from "../utils/getFurthestTile";
+import { DEFAULT_MAP_CONFIG } from "../../../../constants/gameConfig";
+import { caStep } from "./cavernUtils/caStep";
 
 /**
  * Generates a cave map using cellular automata, with robust spawn handling and diagnostics.

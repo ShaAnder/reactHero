@@ -1,4 +1,4 @@
-import { getBlankMap } from "./getBlankMap";
+import { getBlankMap } from "../../utils/getBlankMap";
 
 // Our CAStep Helper function
 export const caStep = (map) => {

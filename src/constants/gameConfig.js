@@ -23,11 +23,11 @@ export const FRAME_DURATION = 1000 / TARGET_FPS;
 // what the user wants to play.
 export const DEFAULT_MAP_CONFIG = {
   dimensions: 64,
-  environment: "dungeon", // default
+  environment: "forest",
   environmentPresets: {
     forest: {
       numRegions: 21,
-      clearingSize: [1, 3],
+      clearingSize: [2, 4],
       voronoiRelaxation: 10,
       walkerPresets: {
         branchChance: 0.05,
@@ -46,31 +46,6 @@ export const DEFAULT_MAP_CONFIG = {
         loopChance: 0.08,
         minCorridor: 2,
         maxCorridor: 4,
-        allowDiagonals: false,
-      },
-    },
-    dungeon: {
-      numRooms: 15,
-      roomMinSize: 3,
-      roomMaxSize: 6,
-      walkerPresets: {
-        branchChance: 0.12,
-        loopChance: 0.07,
-        minCorridor: 2,
-        maxCorridor: 6,
-        allowDiagonals: false,
-      },
-    },
-    castle: {
-      numRegions: 12,
-      regionMinSize: 3,
-      regionMaxSize: 7,
-      roomPlacement: "bsp",
-      walkerPresets: {
-        branchChance: 0.05,
-        loopChance: 0.03,
-        minCorridor: 4,
-        maxCorridor: 10,
         allowDiagonals: false,
       },
     },

@@ -12,7 +12,7 @@ import { DEFAULT_KEY_BINDINGS } from "../../constants/playerControlsConfig";
  * It sets up event listeners and returns a `keys` ref that tracks which keys are held down.
  */
 export const usePlayerControls = (
-	canvasRef,
+	canvas,
 	setPlayer,
 	keyBindings,
 	onToggleMap
@@ -69,7 +69,6 @@ export const usePlayerControls = (
 
 	// --- Mouse Controls ---
 	useEffect(() => {
-		const canvas = canvasRef.current;
 		if (!canvas) return; // Defensive guard: only attach if canvas is mounted
 
 		const handleClick = () => {
@@ -94,7 +93,7 @@ export const usePlayerControls = (
 			canvas.removeEventListener("click", handleClick);
 			document.removeEventListener("mousemove", handleMouseMove);
 		};
-	}, [canvasRef.current, canvasRef, setPlayer]);
+	}, [canvas, setPlayer]);
 
 	return keys;
 };

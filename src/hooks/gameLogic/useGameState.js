@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { usePlayerControls } from "./usePlayerControls";
 import {
 	PLAYER_SPEED,
@@ -43,20 +43,12 @@ export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
 		}
 	}, [spawn, map]);
 
-	// --- Canvas Ref ---
-	const canvasRef = useRef(null);
+	// --- Canvas DOM Node ---
+	const [canvas, setCanvas] = useState(null);
 
 	// --- Input Handling ---
-	const keys = usePlayerControls(
-		canvasRef,
-		setPlayer,
-		keyBindings,
-		onMapToggle
-	);
-
-	/**
-	 * updateGameState
-	 *
+	const keys = usePlayerControls(canvas, setPlayer, keyBindings, onMapToggle);
+	/*
 	 * Moves the player based on input and deltaTime,
 	 * while checking for walls to avoid clipping through.
 	 */
@@ -116,10 +108,9 @@ export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
 		planeX,
 		planeY,
 		updateGameState,
-		canvasRef,
+		setCanvas, // expose setter for callback ref
 	};
 };
-
 /*
 How these functions work:
 

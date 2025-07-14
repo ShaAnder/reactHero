@@ -1,3 +1,4 @@
+import React from "react";
 import Canvas from "../components/canvas/Canvas";
 import Map from "../components/canvas/Map";
 import { WINDOW_WIDTH, WINDOW_HEIGHT } from "../constants/gameConfig";
@@ -6,12 +7,22 @@ const GameScreen = ({
 	map,
 	spawn,
 	exit,
-	canvasRef,
+	setCanvas,
 	openMap,
 	toggleMap,
 	showFps,
 	fps,
 }) => {
+	// Use a ref object for compatibility with Canvas's forwardRef
+	const canvasRef = React.useRef(null);
+
+	// Attach the canvas DOM node to parent state on mount
+	React.useEffect(() => {
+		if (canvasRef.current) {
+			setCanvas(canvasRef.current);
+		}
+	}, [setCanvas]);
+
 	return (
 		<div
 			style={{
@@ -29,8 +40,8 @@ const GameScreen = ({
 				width={WINDOW_WIDTH}
 				height={WINDOW_HEIGHT}
 				style={{ border: "1px solid black" }}
-				onClick={() => console.log("React onClick fired!")}
 			/>
+
 			{openMap && (
 				<div
 					style={{

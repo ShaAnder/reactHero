@@ -40,10 +40,10 @@ const App = () => {
 	const [regenKey, setRegenKey] = useState(0);
 	const [showFps] = useState(true);
 	let content;
+	const [canvas, setCanvasState] = useState(null);
 
 	//--- FUNCTIONS ---//
 	const render = () => {
-		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const context = canvas.getContext("2d");
 		context.clearRect(0, 0, canvas.width, canvas.height);
@@ -60,7 +60,7 @@ const App = () => {
 		}
 	);
 	const { options, setOption } = useOptionsController();
-	const { player, updateGameState, canvasRef } = useGameState(
+	const { player, updateGameState, setCanvas } = useGameState(
 		map,
 		spawn,
 		DEFAULT_KEY_BINDINGS,
@@ -133,7 +133,10 @@ const App = () => {
 					map={map}
 					spawn={spawn}
 					exit={exit}
-					canvasRef={canvasRef}
+					setCanvas={(node) => {
+						setCanvas(node);
+						setCanvasState(node);
+					}}
 					openMap={openMap}
 					toggleMap={toggleMap}
 					showFps={showFps}

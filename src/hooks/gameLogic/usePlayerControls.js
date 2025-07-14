@@ -12,91 +12,91 @@ import { DEFAULT_KEY_BINDINGS } from "../../constants/playerControlsConfig";
  * It sets up event listeners and returns a `keys` ref that tracks which keys are held down.
  */
 export const usePlayerControls = (
-  canvasRef,
-  setPlayer,
-  keyBindings,
-  onToggleMap
+	canvasRef,
+	setPlayer,
+	keyBindings,
+	onToggleMap
 ) => {
-  // --- Track pressed keys ---
-  const keys = useRef({
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    strafeLeft: false,
-    strafeRight: false,
-    map: false,
-  });
+	// --- Track pressed keys ---
+	const keys = useRef({
+		up: false,
+		down: false,
+		left: false,
+		right: false,
+		strafeLeft: false,
+		strafeRight: false,
+		map: false,
+	});
 
-  // --- Keyboard Controls ---
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      const key = e.key.toLowerCase();
+	// --- Keyboard Controls ---
+	useEffect(() => {
+		const handleKeyDown = (e) => {
+			const key = e.key.toLowerCase();
 
-      if (key === keyBindings.up) keys.current.up = true;
-      else if (key === keyBindings.down) keys.current.down = true;
-      else if (key === keyBindings.left) keys.current.left = true;
-      else if (key === keyBindings.right) keys.current.right = true;
-      else if (key === keyBindings.strafeLeft) keys.current.strafeLeft = true;
-      else if (key === keyBindings.strafeRight) keys.current.strafeRight = true;
-      else if (key === keyBindings.map) {
-        if (!keys.current.map) {
-          keys.current.map = true;
-          if (onToggleMap) onToggleMap();
-        }
-      }
-    };
+			if (key === keyBindings.up) keys.current.up = true;
+			else if (key === keyBindings.down) keys.current.down = true;
+			else if (key === keyBindings.left) keys.current.left = true;
+			else if (key === keyBindings.right) keys.current.right = true;
+			else if (key === keyBindings.strafeLeft) keys.current.strafeLeft = true;
+			else if (key === keyBindings.strafeRight) keys.current.strafeRight = true;
+			else if (key === keyBindings.map) {
+				if (!keys.current.map) {
+					keys.current.map = true;
+					if (onToggleMap) onToggleMap();
+				}
+			}
+		};
 
-    const handleKeyUp = (e) => {
-      const key = e.key.toLowerCase();
-      if (key === keyBindings.up) keys.current.up = false;
-      if (key === keyBindings.down) keys.current.down = false;
-      if (key === keyBindings.left) keys.current.left = false;
-      if (key === keyBindings.right) keys.current.right = false;
-      if (key === keyBindings.strafeLeft) keys.current.strafeLeft = false;
-      if (key === keyBindings.strafeRight) keys.current.strafeRight = false;
-      if (key === keyBindings.map) keys.current.map = false;
-    };
+		const handleKeyUp = (e) => {
+			const key = e.key.toLowerCase();
+			if (key === keyBindings.up) keys.current.up = false;
+			if (key === keyBindings.down) keys.current.down = false;
+			if (key === keyBindings.left) keys.current.left = false;
+			if (key === keyBindings.right) keys.current.right = false;
+			if (key === keyBindings.strafeLeft) keys.current.strafeLeft = false;
+			if (key === keyBindings.strafeRight) keys.current.strafeRight = false;
+			if (key === keyBindings.map) keys.current.map = false;
+		};
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [keyBindings, onToggleMap]);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [keyBindings, onToggleMap]);
 
-  // --- Mouse Controls ---
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return; // Defensive guard: only attach if canvas is mounted
+	// --- Mouse Controls ---
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return; // Defensive guard: only attach if canvas is mounted
 
-    const handleClick = () => {
-      if (canvas.requestPointerLock) {
-        canvas.requestPointerLock();
-      }
-    };
+		const handleClick = () => {
+			if (canvas.requestPointerLock) {
+				canvas.requestPointerLock();
+			}
+		};
 
-    const handleMouseMove = (e) => {
-      if (document.pointerLockElement === canvas) {
-        setPlayer((prev) => ({
-          ...prev,
-          angle: prev.angle + e.movementX * MOUSE_SENSITIVITY,
-        }));
-      }
-    };
+		const handleMouseMove = (e) => {
+			if (document.pointerLockElement === canvas) {
+				setPlayer((prev) => ({
+					...prev,
+					angle: prev.angle + e.movementX * MOUSE_SENSITIVITY,
+				}));
+			}
+		};
 
-    canvas.addEventListener("click", handleClick);
-    document.addEventListener("mousemove", handleMouseMove);
+		canvas.addEventListener("click", handleClick);
+		document.addEventListener("mousemove", handleMouseMove);
 
-    return () => {
-      canvas.removeEventListener("click", handleClick);
-      document.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, [canvasRef, setPlayer]);
+		return () => {
+			canvas.removeEventListener("click", handleClick);
+			document.removeEventListener("mousemove", handleMouseMove);
+		};
+	}, [canvasRef.current, canvasRef, setPlayer]);
 
-  return keys;
+	return keys;
 };
 
 /*

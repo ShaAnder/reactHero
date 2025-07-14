@@ -21,32 +21,29 @@ export const useGameController = ({ environment }) => {
 	// Loads the next level (generates a new map, spawn, and exit)
 
 	const loadNextLevel = useCallback(async () => {
-		console.log("[useGameController] loadNextLevel: called");
 		setLoading(true);
 		setError(null);
 		setMap(null);
 		setSpawn(null);
 		setExit(null);
 		try {
-			console.log("[useGameController] Simulating loading delay");
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			const preset =
 				DEFAULT_MAP_CONFIG.environmentPresets[environment] ||
 				DEFAULT_MAP_CONFIG.environmentPresets["dungeon"];
-			console.log("[useGameController] Building config for environment:", environment);
+
 			const config = {
 				...DEFAULT_MAP_CONFIG,
 				...preset,
 				environment,
 				walkerPresets: preset.walkerPresets,
 			};
-			console.log("[useGameController] Calling generateMap");
+
 			const {
 				map,
 				start: spawnPosition,
 				exit: exitPosition,
 			} = await generateMap(config);
-			console.log("[useGameController] Map generated, setting state");
 			setMap(map);
 			setSpawn(spawnPosition);
 			setExit(exitPosition);

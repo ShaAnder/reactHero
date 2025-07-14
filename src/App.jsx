@@ -53,17 +53,12 @@ const App = () => {
 
 	//--- HOOKS ---//
 	const { gameState, setGameState } = useGameStatus();
-const {
-	map,
-	spawn,
-	exit,
-	loading,
-	error,
-	loadNextLevel
-} = useGameController({
-	environment,
-	regenKey,
-});
+	const { map, spawn, exit, loading, error, loadNextLevel } = useGameController(
+		{
+			environment,
+			regenKey,
+		}
+	);
 	const { options, setOption } = useOptionsController();
 	const { player, updateGameState, canvasRef } = useGameState(
 		map,

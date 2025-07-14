@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { usePlayerControls } from "./usePlayerControls";
 import {
-  PLAYER_SPEED,
-  PLAYER_ROTATION_SPEED,
+	PLAYER_SPEED,
+	PLAYER_ROTATION_SPEED,
 } from "../../constants/playerConfig";
 import { getIsWall } from "../../helpers/getIsWall";
 import { FOV_ANGLE, TILE_SIZE } from "../../constants/gameConfig";
@@ -21,103 +21,103 @@ import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
  * - Camera plane math for raycasting (using external helper)
  */
 export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
-  // --- Player State ---
-  // Initialize player position from spawn (tile coordinates to pixel coordinates)
-  const [player, setPlayer] = useState(() => ({
-    x: spawn ? spawn[0] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
-    y: spawn ? spawn[1] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
-    angle: setPlayerFacingInward(spawn, map),
-    moveSpeed: PLAYER_SPEED,
-    rotationSpeed: PLAYER_ROTATION_SPEED,
-  }));
+	// --- Player State ---
+	// Initialize player position from spawn (tile coordinates to pixel coordinates)
+	const [player, setPlayer] = useState(() => ({
+		x: spawn ? spawn[0] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
+		y: spawn ? spawn[1] * TILE_SIZE + TILE_SIZE / 2 : 1.5 * TILE_SIZE,
+		angle: setPlayerFacingInward(spawn, map),
+		moveSpeed: PLAYER_SPEED,
+		rotationSpeed: PLAYER_ROTATION_SPEED,
+	}));
 
-  // If spawn changes (new level), reset player position
-  useEffect(() => {
-    if (spawn) {
-      setPlayer((prev) => ({
-        ...prev,
-        x: spawn[0] * TILE_SIZE + TILE_SIZE / 2,
-        y: spawn[1] * TILE_SIZE + TILE_SIZE / 2,
-        angle: setPlayerFacingInward(spawn, map),
-      }));
-    }
-  }, [spawn, map]);
+	// If spawn changes (new level), reset player position
+	useEffect(() => {
+		if (spawn) {
+			setPlayer((prev) => ({
+				...prev,
+				x: spawn[0] * TILE_SIZE + TILE_SIZE / 2,
+				y: spawn[1] * TILE_SIZE + TILE_SIZE / 2,
+				angle: setPlayerFacingInward(spawn, map),
+			}));
+		}
+	}, [spawn, map]);
 
-  // --- Canvas Ref ---
-  const canvasRef = useRef(null);
+	// --- Canvas Ref ---
+	const canvasRef = useRef(null);
 
-  // --- Input Handling ---
-  const keys = usePlayerControls(
-    canvasRef,
-    setPlayer,
-    keyBindings,
-    onMapToggle
-  );
+	// --- Input Handling ---
+	const keys = usePlayerControls(
+		canvasRef,
+		setPlayer,
+		keyBindings,
+		onMapToggle
+	);
 
-  /**
-   * updateGameState
-   *
-   * Moves the player based on input and deltaTime,
-   * while checking for walls to avoid clipping through.
-   */
-  const updateGameState = useCallback(
-    (deltaTime) => {
-      setPlayer((prevPlayer) => {
-        let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
+	/**
+	 * updateGameState
+	 *
+	 * Moves the player based on input and deltaTime,
+	 * while checking for walls to avoid clipping through.
+	 */
+	const updateGameState = useCallback(
+		(deltaTime) => {
+			setPlayer((prevPlayer) => {
+				let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 
-        // --- Handle Rotation ---
-        if (keys.current.left) angle -= rotationSpeed * deltaTime;
-        if (keys.current.right) angle += rotationSpeed * deltaTime;
+				// --- Handle Rotation ---
+				if (keys.current.left) angle -= rotationSpeed * deltaTime;
+				if (keys.current.right) angle += rotationSpeed * deltaTime;
 
-        // --- Movement Calculation ---
-        let moveStepX = 0;
-        let moveStepY = 0;
+				// --- Movement Calculation ---
+				let moveStepX = 0;
+				let moveStepY = 0;
 
-        if (keys.current.up) {
-          moveStepX += Math.cos(angle) * moveSpeed * deltaTime;
-          moveStepY += Math.sin(angle) * moveSpeed * deltaTime;
-        }
-        if (keys.current.down) {
-          moveStepX -= Math.cos(angle) * moveSpeed * deltaTime;
-          moveStepY -= Math.sin(angle) * moveSpeed * deltaTime;
-        }
-        if (keys.current.strafeLeft) {
-          moveStepX += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
-          moveStepY += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
-        }
-        if (keys.current.strafeRight) {
-          moveStepX += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
-          moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
-        }
+				if (keys.current.up) {
+					moveStepX += Math.cos(angle) * moveSpeed * deltaTime;
+					moveStepY += Math.sin(angle) * moveSpeed * deltaTime;
+				}
+				if (keys.current.down) {
+					moveStepX -= Math.cos(angle) * moveSpeed * deltaTime;
+					moveStepY -= Math.sin(angle) * moveSpeed * deltaTime;
+				}
+				if (keys.current.strafeLeft) {
+					moveStepX += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
+					moveStepY += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
+				}
+				if (keys.current.strafeRight) {
+					moveStepX += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
+					moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
+				}
 
-        // --- Wall Collision Detection using the current map ---
-        if (map && !getIsWall(x + moveStepX, y, map)) x += moveStepX;
-        if (map && !getIsWall(x, y + moveStepY, map)) y += moveStepY;
+				// --- Wall Collision Detection using the current map ---
+				if (map && !getIsWall(x + moveStepX, y, map)) x += moveStepX;
+				if (map && !getIsWall(x, y + moveStepY, map)) y += moveStepY;
 
-        // --- Angle Wrapping ---
-        if (angle < 0) angle += Math.PI * 2;
-        if (angle >= Math.PI * 2) angle -= Math.PI * 2;
+				// --- Angle Wrapping ---
+				if (angle < 0) angle += Math.PI * 2;
+				if (angle >= Math.PI * 2) angle -= Math.PI * 2;
 
-        return { ...prevPlayer, x, y, angle };
-      });
-    },
-    [keys, map]
-  );
+				return { ...prevPlayer, x, y, angle };
+			});
+		},
+		[keys, map]
+	);
 
-  // --- Use external helper to get camera plane ---
-  const { planeX, planeY } = getCameraPlane(
-    player.angle,
-    FOV_ANGLE,
-    1 // You may want to pass actual aspect ratio from your App
-  );
+	// --- Use external helper to get camera plane ---
+	const { planeX, planeY } = getCameraPlane(
+		player.angle,
+		FOV_ANGLE,
+		1 // You may want to pass actual aspect ratio from your App
+	);
 
-  return {
-    player,
-    planeX,
-    planeY,
-    updateGameState,
-    canvasRef,
-  };
+	return {
+		player,
+		planeX,
+		planeY,
+		updateGameState,
+		canvasRef,
+	};
 };
 
 /*

@@ -20,7 +20,14 @@ import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
  * - Mouse/keyboard input
  * - Camera plane math for raycasting (using external helper)
  */
-export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
+export const useGameState = (
+	map,
+	spawn,
+	keyBindings,
+	onMapToggle,
+	onToggleGameMenu,
+	gameState
+) => {
 	// --- Player State ---
 	// Initialize player position from spawn (tile coordinates to pixel coordinates)
 	const [player, setPlayer] = useState(() => ({
@@ -47,13 +54,21 @@ export const useGameState = (map, spawn, keyBindings, onMapToggle) => {
 	const [canvas, setCanvas] = useState(null);
 
 	// --- Input Handling ---
-	const keys = usePlayerControls(canvas, setPlayer, keyBindings, onMapToggle);
+	const keys = usePlayerControls(
+		canvas,
+		setPlayer,
+		keyBindings,
+		onMapToggle,
+		onToggleGameMenu,
+		gameState
+	);
 	/*
 	 * Moves the player based on input and deltaTime,
 	 * while checking for walls to avoid clipping through.
 	 */
 	const updateGameState = useCallback(
-		(deltaTime) => {
+		(deltaTime, gameState) => {
+			if (gameState !== "playing") return;
 			setPlayer((prevPlayer) => {
 				let { x, y, angle, moveSpeed, rotationSpeed } = prevPlayer;
 

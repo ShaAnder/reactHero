@@ -15,7 +15,9 @@ export const usePlayerControls = (
 	canvas,
 	setPlayer,
 	keyBindings,
-	onToggleMap
+	onToggleMap,
+	onToggleGameMenu,
+	gameState
 ) => {
 	// --- Track pressed keys ---
 	const keys = useRef({
@@ -26,13 +28,17 @@ export const usePlayerControls = (
 		strafeLeft: false,
 		strafeRight: false,
 		map: false,
+		pause: false,
 	});
 
 	// --- Keyboard Controls ---
+
+	// Add/remove event listeners only when entering/leaving PLAYING
 	useEffect(() => {
+		if (gameState !== "PLAYING" && gameState !== "playing") return;
+
 		const handleKeyDown = (e) => {
 			const key = e.key.toLowerCase();
-
 			if (key === keyBindings.up) keys.current.up = true;
 			else if (key === keyBindings.down) keys.current.down = true;
 			else if (key === keyBindings.left) keys.current.left = true;
@@ -43,6 +49,15 @@ export const usePlayerControls = (
 				if (!keys.current.map) {
 					keys.current.map = true;
 					if (onToggleMap) onToggleMap();
+				}
+			} else if (key === keyBindings.pause) {
+				if (!keys.current.pause) {
+					console.log("[DEBUG] Pause keydown detected");
+					keys.current.pause = true;
+					if (onToggleGameMenu) {
+						console.log("[DEBUG] Calling onToggleGameMenu from pause key");
+						onToggleGameMenu();
+					}
 				}
 			}
 		};
@@ -56,16 +71,35 @@ export const usePlayerControls = (
 			if (key === keyBindings.strafeLeft) keys.current.strafeLeft = false;
 			if (key === keyBindings.strafeRight) keys.current.strafeRight = false;
 			if (key === keyBindings.map) keys.current.map = false;
+			if (key === keyBindings.pause) {
+				console.log("[DEBUG] Pause keyup detected");
+				keys.current.pause = false;
+			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
+		document.addEventListener("keydown", handleKeyDown);
+		document.addEventListener("keyup", handleKeyUp);
 
 		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
+			document.removeEventListener("keydown", handleKeyDown);
+			document.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [keyBindings, onToggleMap]);
+	}, [keyBindings, onToggleMap, onToggleGameMenu, gameState]);
+
+	// Reset keys ref only when leaving PLAYING
+	useEffect(() => {
+		if (gameState === "playing") return;
+		keys.current = {
+			up: false,
+			down: false,
+			left: false,
+			right: false,
+			strafeLeft: false,
+			strafeRight: false,
+			map: false,
+			pause: false,
+		};
+	}, [gameState]);
 
 	// --- Mouse Controls ---
 	useEffect(() => {

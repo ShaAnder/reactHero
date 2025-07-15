@@ -1,8 +1,11 @@
 import React from "react";
 import Canvas from "../components/canvas/Canvas";
 import Map from "../components/canvas/Map";
+import { usePlayerControls } from "../hooks/gameLogic/usePlayerControls";
+import { DEFAULT_KEY_BINDINGS } from "../constants/playerControlsConfig";
 
 const GameScreen = ({
+	player,
 	map,
 	spawn,
 	exit,
@@ -11,6 +14,7 @@ const GameScreen = ({
 	toggleMap,
 	showFps,
 	fps,
+	onToggleGameMenu,
 }) => {
 	// Use a ref object for compatibility with Canvas's forwardRef
 	const canvasRef = React.useRef(null);
@@ -68,8 +72,16 @@ const GameScreen = ({
 		};
 	}, []);
 
+	usePlayerControls(
+		canvasRef.current,
+		() => {}, // setPlayer is handled elsewhere
+		DEFAULT_KEY_BINDINGS,
+		toggleMap,
+		onToggleGameMenu
+	);
+
 	return (
-		<div className="game-screen">
+		<div className="game-screen" style={{ position: "relative" }}>
 			{/* Canvas and game UI */}
 			<Canvas
 				ref={canvasRef}
@@ -81,6 +93,29 @@ const GameScreen = ({
 					height: `${canvasDimensions.height}px`,
 				}}
 			/>
+
+			{/* Pause/Menu Button */}
+			<button
+				className="pause-menu-btn"
+				style={{
+					position: "absolute",
+					bottom: 24,
+					left: 24,
+					zIndex: 10,
+					padding: "10px 18px",
+					fontSize: "1.1rem",
+					borderRadius: "8px",
+					background: "rgba(30,30,30,0.85)",
+					color: "#fff",
+					border: "none",
+					cursor: "pointer",
+					boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+				}}
+				onClick={onToggleGameMenu}
+				aria-label="Pause / Menu"
+			>
+				&#9776; Menu
+			</button>
 
 			{openMap && (
 				<div className="game-map-overlay" onClick={toggleMap}>

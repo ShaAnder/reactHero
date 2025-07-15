@@ -14,34 +14,34 @@ import { getCameraPlane } from "../helpers/getCameraPlane";
 // It calculates the camera plane (which determines the FOV and how wide the rays fan out),
 // then calls the rayCaster to actually render the 3D view.
 export const renderRaycaster = (context, player, map) => {
-  const screenWidth = context.canvas.width;
-  const screenHeight = context.canvas.height;
-  const aspectRatio = screenWidth / screenHeight;
+	const screenWidth = context.canvas.width;
+	const screenHeight = context.canvas.height;
+	const aspectRatio = screenWidth / screenHeight;
 
-  // Field of view in radians (60 degrees is a common default)
-  const FOV = FOV_ANGLE;
+	// Field of view in radians (60 degrees is a common default)
+	const FOV = FOV_ANGLE;
 
-  // The camera plane is perpendicular to the player's view direction.
-  // It controls how wide the FOV is and is scaled by the aspect ratio.
-  const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
+	// The camera plane is perpendicular to the player's view direction.
+	// It controls how wide the FOV is and is scaled by the aspect ratio.
+	const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
 
-  // Run the raycasting renderer to draw walls and perspective-correct geometry
-  rayCaster({
-    player,
-    planeX,
-    planeY,
-    screenWidth,
-    screenHeight,
-    map,
-    context,
-  });
+	// Run the raycasting renderer to draw walls and perspective-correct geometry
+	rayCaster({
+		player,
+		planeX,
+		planeY,
+		screenWidth,
+		screenHeight,
+		map,
+		context,
+	});
 };
 
 // Main rendering function called every frame.
 // It handles both the 3D scene and the top-down minimap.
 export const render = (context, player, map) => {
-  renderRaycaster(context, player, map); // Render the 3D environment
-  renderMinimap(context, player, map); // Draw minimap overlay for debug/navigation
+	renderRaycaster(context, player, map); // Render the 3D environment
+	renderMinimap(context, player, map); // Draw minimap overlay for debug/navigation
 };
 
 /*

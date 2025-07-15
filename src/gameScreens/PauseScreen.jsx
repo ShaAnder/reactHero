@@ -1,10 +1,14 @@
 import React from "react";
 
 const PauseScreen = ({ setGameState }) => (
-	<div style={{ textAlign: "center", marginTop: 80 }}>
-		<h2>Game Paused</h2>
-		<button onClick={() => setGameState("playing")}>Resume</button>
-		<button onClick={() => setGameState("main_menu")}>Main Menu</button>
+	<div className="screen-container">
+		<h2 className="screen-subtitle">Game Paused</h2>
+		<button className="screen-button" onClick={() => setGameState("playing")}>
+			Resume
+		</button>
+		<button className="screen-button" onClick={() => setGameState("main_menu")}>
+			Main Menu
+		</button>
 	</div>
 );
 

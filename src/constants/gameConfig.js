@@ -1,7 +1,8 @@
-// These constants set the main game window size in pixels.
-// You can tweak these to change how big the game appears on screen.
-export const WINDOW_WIDTH = 1280;
-export const WINDOW_HEIGHT = 720;
+// These constants set the reference game window size in pixels.
+// NOTE: The actual game now uses full viewport dimensions dynamically.
+// These are kept for reference and potential future use.
+export const WINDOW_WIDTH = 1600;
+export const WINDOW_HEIGHT = 900;
 
 // This defines how big each square tile is on the map, in pixels.
 // All map layouts and player movement will use this as the base unit.
@@ -22,32 +23,32 @@ export const FRAME_DURATION = 1000 / TARGET_FPS;
 // Default map config for creating our map, we want diff presents for the generator based on
 // what the user wants to play.
 export const DEFAULT_MAP_CONFIG = {
-  dimensions: 64,
-  environment: "forest",
-  environmentPresets: {
-    forest: {
-      numRegions: 21,
-      clearingSize: [2, 4],
-      voronoiRelaxation: 10,
-      walkerPresets: {
-        branchChance: 0.05,
-        loopChance: 0.08,
-        minCorridor: 3,
-        maxCorridor: 5,
-        allowDiagonals: true,
-      },
-    },
-    cavern: {
-      fillProbability: 0.55,
-      caIterations: 5,
-      useTunnels: true,
-      walkerPresets: {
-        branchChance: 0.15,
-        loopChance: 0.08,
-        minCorridor: 2,
-        maxCorridor: 4,
-        allowDiagonals: false,
-      },
-    },
-  },
+	dimensions: 64,
+	environment: "forest",
+	environmentPresets: {
+		forest: {
+			numRegions: 21,
+			clearingSize: [2, 4],
+			voronoiRelaxation: 10,
+			walkerPresets: {
+				branchChance: 0.05,
+				loopChance: 0.08,
+				minCorridor: 3,
+				maxCorridor: 5,
+				allowDiagonals: true,
+			},
+		},
+		cavern: {
+			fillProbability: 0.55,
+			caIterations: 5,
+			useTunnels: true,
+			walkerPresets: {
+				branchChance: 0.15,
+				loopChance: 0.08,
+				minCorridor: 2,
+				maxCorridor: 4,
+				allowDiagonals: false,
+			},
+		},
+	},
 };

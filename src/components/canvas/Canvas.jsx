@@ -1,13 +1,40 @@
-import { useEffect, forwardRef } from "react";
+import { useEffect, forwardRef, useState } from "react";
 
 // Forward the ref from parent to the actual canvas DOM element
 const Canvas = forwardRef(({ width, height, style }, ref) => {
+	const [canvasSize, setCanvasSize] = useState({ width, height });
+
+	// Update canvas size when props change
 	useEffect(() => {
+		setCanvasSize({ width, height });
+
 		if (ref?.current) {
 			ref.current.width = width;
 			ref.current.height = height;
 		}
 	}, [width, height, ref]);
+
+	useEffect(() => {
+		if (ref?.current) {
+			ref.current.width = canvasSize.width;
+			ref.current.height = canvasSize.height;
+		}
+	}, [canvasSize, ref]);
+
+	useEffect(() => {
+		if (ref?.current) {
+			console.log(
+				"[Canvas] Internal size:",
+				ref.current.width,
+				ref.current.height
+			);
+			console.log(
+				"[Canvas] CSS size:",
+				ref.current.style.width,
+				ref.current.style.height
+			);
+		}
+	}, [canvasSize, ref]);
 
 	return <canvas ref={ref} style={style} />;
 });

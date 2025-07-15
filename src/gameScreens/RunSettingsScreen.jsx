@@ -6,11 +6,12 @@ const RunSettingsScreen = ({
 	setEnvironment,
 	setRegenKey,
 }) => (
-	<div style={{ textAlign: "center", marginTop: 80 }}>
-		<h2>Run Settings</h2>
-		<div style={{ margin: 16 }}>
-			<label>Environment: </label>
+	<div className="screen-container">
+		<h2 className="screen-subtitle">Run Settings</h2>
+		<div className="settings-option">
+			<label className="settings-label">Environment: </label>
 			<select
+				className="settings-select"
 				value={environment}
 				onChange={(e) => setEnvironment(e.target.value)}
 			>
@@ -20,6 +21,7 @@ const RunSettingsScreen = ({
 		</div>
 		{/* Add more run settings as needed */}
 		<button
+			className="screen-button"
 			onClick={() => {
 				setRegenKey((prev) => prev + 1);
 				setGameState("loading");
@@ -27,7 +29,9 @@ const RunSettingsScreen = ({
 		>
 			Start Run
 		</button>
-		<button onClick={() => setGameState("main_menu")}>Back</button>
+		<button className="screen-button" onClick={() => setGameState("main_menu")}>
+			Back
+		</button>
 	</div>
 );
 

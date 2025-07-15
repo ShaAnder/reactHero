@@ -29,18 +29,7 @@ function Map({ map, spawn, exit }) {
 		}
 	}, [map, spawn, exit]);
 
-	return (
-		map && (
-			<canvas
-				ref={canvasRef}
-				style={{
-					border: "2px solid white",
-					imageRendering: "pixelated",
-					display: "block",
-				}}
-			/>
-		)
-	);
+	return map && <canvas ref={canvasRef} className="map-canvas" />;
 }
 
 export default Map;

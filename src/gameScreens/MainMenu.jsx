@@ -1,13 +1,28 @@
 const MainMenu = ({ setGameState }) => {
 	return (
-		<div style={{ textAlign: "center", marginTop: 80 }}>
-			<h1>ReactDivers</h1>
-			<p>
+		<div className="screen-container">
+			<h1 className="screen-title">ReactDivers</h1>
+			<p className="screen-text">
 				Welcome to the dungeon crawler! Select your options and start your run.
 			</p>
-			<button onClick={() => setGameState("run_settings")}>New Run</button>
-			<button onClick={() => setGameState("settings")}>Settings</button>
-			<button onClick={() => setGameState("highscores")}>Highscores</button>
+			<button
+				className="screen-button"
+				onClick={() => setGameState("run_settings")}
+			>
+				New Run
+			</button>
+			<button
+				className="screen-button"
+				onClick={() => setGameState("settings")}
+			>
+				Settings
+			</button>
+			<button
+				className="screen-button"
+				onClick={() => setGameState("highscores")}
+			>
+				Highscores
+			</button>
 		</div>
 	);
 };

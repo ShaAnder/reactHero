@@ -1,16 +1,18 @@
 import React from "react";
 
 const LoadingScreen = ({ error, loading, message }) => (
-	<div style={{ textAlign: "center", marginTop: 80 }}>
+	<div className="screen-container">
 		{error ? (
 			<>
-				<h2 style={{ color: "red" }}>Error</h2>
-				<p>{error}</p>
+				<h2 className="screen-error">Error</h2>
+				<p className="screen-text">{error}</p>
 			</>
 		) : loading ? (
 			<>
-				<h2>Loading...</h2>
-				<p>{message || "Generating dungeon, please wait."}</p>
+				<h2 className="screen-subtitle">Loading...</h2>
+				<p className="screen-text">
+					{message || "Generating dungeon, please wait."}
+				</p>
 			</>
 		) : null}
 	</div>

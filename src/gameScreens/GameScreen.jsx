@@ -5,7 +5,6 @@ import { usePlayerControls } from "../hooks/gameLogic/usePlayerControls";
 import { DEFAULT_KEY_BINDINGS } from "../constants/playerControlsConfig";
 
 const GameScreen = ({
-	player,
 	map,
 	spawn,
 	exit,
@@ -15,6 +14,7 @@ const GameScreen = ({
 	showFps,
 	fps,
 	onToggleGameMenu,
+	runData,
 }) => {
 	// Use a ref object for compatibility with Canvas's forwardRef
 	const canvasRef = React.useRef(null);
@@ -82,6 +82,27 @@ const GameScreen = ({
 
 	return (
 		<div className="game-screen" style={{ position: "relative" }}>
+			{/* Top right: environment and level */}
+			{runData && (
+				<div
+					style={{
+						position: "absolute",
+						top: 16,
+						left: "50%",
+						transform: "translateX(-50%)",
+						zIndex: 20,
+						background: "rgba(30,30,30,0.7)",
+						color: "#fff",
+						padding: "8px 18px",
+						borderRadius: "8px",
+						fontSize: "1.1rem",
+						fontWeight: 500,
+					}}
+				>
+					{runData.environment}: {runData.currentLevel}
+				</div>
+			)}
+
 			{/* Canvas and game UI */}
 			<Canvas
 				ref={canvasRef}

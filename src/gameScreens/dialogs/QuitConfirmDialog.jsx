@@ -9,10 +9,10 @@ const QuitConfirmDialog = ({ onConfirm, onCancel }) => (
 			All progress will be lost.
 		</p>
 		<button className="screen-button" onClick={onConfirm}>
-			Yes, Quit
+			Yes
 		</button>
 		<button className="screen-button" onClick={onCancel}>
-			No, Return to Pause
+			No
 		</button>
 	</div>
 );

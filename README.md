@@ -1,4 +1,4 @@
-# React-enStein
+# ReactDivers
 
 ```
 image to go here
@@ -24,7 +24,7 @@ image to go here
 
 ## 🚀 About This Project
 
-Retro Wolfenstein 3D clone using 2D raycasting, a lot of math and a lot of caffeine, built using Vite + React.
+Retro Wolfenstein 3D clone using 2D raycasting, a lot of math and a lot of caffeine, built using Vite + React. (Formally I need to update this readme)
 
 ---
 

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 
-// Detects when player steps onto/away from the exit tile and dispatches reducer actions.
-// Optionally triggers a delve modal via actions.setActiveModal('delve') when not on final level.
+// Watches player tile vs exit tile. When you step on the exit it either:
+// - Wins the run (final level)
+// - Opens a “delve deeper?” modal (earlier levels) and releases pointer lock
+// Leaving the tile reverses those effects.
 export function useExitDetection({
 	player,
 	exit,
@@ -17,16 +19,12 @@ export function useExitDetection({
 	useEffect(() => {
 		if (gameState !== GAME_STATES.PLAYING) return;
 		if (!player || !exit) return;
-		if (debug)
-			console.log("[EXIT DETECT] effect tick", {
-				gameState,
-				level: state.run.level,
-				length: state.run.length,
-				status: state.run.status,
-				activeModal: state.ui.activeModal,
-			});
+		if (debug) {
+			/* effect tick diagnostic removed for production cleanliness */
+		}
 
-		const TILE_SIZE = 64; // TODO: lift to shared constant
+		// TODO: lift to shared constant
+		const TILE_SIZE = 64;
 		const playerTileX = Math.floor(player.x / TILE_SIZE);
 		const playerTileY = Math.floor(player.y / TILE_SIZE);
 		const exitX = Array.isArray(exit) ? exit[0] : exit.x;
@@ -35,35 +33,23 @@ export function useExitDetection({
 
 		if (isOnExit && !wasOnExitRef.current) {
 			wasOnExitRef.current = true;
-			if (debug)
-				console.log("[EXIT DETECT] stepping ON exit", {
-					playerTileX,
-					playerTileY,
-					exitX,
-					exitY,
-				});
+			if (debug) {
+				/* stepping ON exit */
+			}
 			actions.playerSteppedOnExit();
 			const isFinalLevel =
 				state.run.level != null &&
 				state.run.length != null &&
 				state.run.level === state.run.length;
-			if (debug) {
-				console.log("[EXIT DETECT] Player entered exit tile", {
-					playerTileX,
-					playerTileY,
-					exitX,
-					exitY,
-					level: state.run.level,
-					length: state.run.length,
-					isFinalLevel,
-				});
-			}
+			// detailed log removed
 			if (isFinalLevel) {
 				// Immediate win condition: keep pointer lock to avoid pause race, clear any modal
 				if (state.ui.activeModal) actions.setActiveModal(null);
 				actions.win();
 				setGameState(GAME_STATES.WIN);
-				if (debug) console.log("[EXIT DETECT] Final level => WIN state");
+				if (debug) {
+					/* final level win */
+				}
 			} else if (
 				autoOpenDelve &&
 				state.run.status === "inProgress" &&
@@ -71,16 +57,22 @@ export function useExitDetection({
 				state.run.length != null &&
 				state.run.level < state.run.length
 			) {
-				if (debug) console.log("[EXIT DETECT] opening delve modal");
+				if (debug) {
+					/* opening delve modal */
+				}
 				actions.setActiveModal("delve");
 				document.exitPointerLock?.();
 			}
 		} else if (!isOnExit && wasOnExitRef.current) {
 			wasOnExitRef.current = false;
-			if (debug) console.log("[EXIT DETECT] stepping OFF exit");
+			if (debug) {
+				/* stepping OFF exit */
+			}
 			actions.playerLeftExit();
 			if (state.ui.activeModal === "delve") {
-				if (debug) console.log("[EXIT DETECT] closing delve on leave");
+				if (debug) {
+					/* closing delve on leave */
+				}
 				actions.setActiveModal(null);
 			}
 		}

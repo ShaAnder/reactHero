@@ -1,45 +1,46 @@
 /**
- * Calculates the camera plane vector used in raycasting.
+ * Calculates the sideways (perpendicular) vector that defines how wide the
+ * player can see – the “camera plane”. Rays will fan out along this plane.
  *
- * In a raycasting engine, the camera plane defines the width of the player's vision,
- * spreading out rays across the screen to simulate perspective.
+ * Plain language version:
+ * Picture the player looking forward. Now rotate that forward arrow 90° to
+ * get a sideways arrow. Scale that sideways arrow so that when we sweep from
+ * the far left of the screen to the far right we cover the intended field of
+ * view. That scaled perpendicular vector is what we return here.
  *
- * This vector is perpendicular (90 degrees rotated) to the player's direction,
- * and its length determines how "wide" the player's field of view appears.
- *
- * @param {number} angle - The player's viewing angle in radians.
- * @param {number} fovRadians - Field of view in radians (typically ~1.05 for 60°).
- * @param {number} aspectRatio - Screen's width divided by height.
- * @returns {Object} planeX and planeY - the 2D vector representing the camera plane.
+ * @param {number} angle       Player viewing angle in radians
+ * @param {number} fovRadians  Desired field of view in radians (≈1.047 for 60°)
+ * @param {number} aspectRatio Screen width / height (used to keep horizontal FOV stable)
+ * @returns {{planeX:number, planeY:number}}
  */
 export const getCameraPlane = (angle, fovRadians, aspectRatio) => {
-  // Get the player's direction as a unit vector
-  const dirX = Math.cos(angle);
-  const dirY = Math.sin(angle);
+	// Get the player's direction as a unit vector
+	const dirX = Math.cos(angle);
+	const dirY = Math.sin(angle);
 
-  // Rotate the direction vector 90° to get a perpendicular camera plane vector.
-  // In 2D, rotating (x, y) by 90° counter-clockwise gives you (-y, x).
-  // This vector "fans out" rays sideways from the player's view.
-  //
-  // Scale the plane by tan(FOV/2) to control the width of the FOV.
-  // Multiplying planeX by aspectRatio keeps the FOV consistent on all screen shapes.
-  const fovScale = Math.tan(fovRadians / 2);
+	// Rotate the forward direction 90° counter‑clockwise: (x,y) -> (-y,x)
+	// Scale by tan(FOV/2) so edges of the screen align to FOV limits.
+	// Stretch X by aspect ratio so wide screens don’t widen the true FOV.
+	const fovScale = Math.tan(fovRadians / 2);
 
-  return {
-    planeX: -dirY * fovScale * aspectRatio,
-    planeY: dirX * fovScale,
-  };
+	return {
+		planeX: -dirY * fovScale * aspectRatio,
+		planeY: dirX * fovScale,
+	};
 };
 
 /*
-How this file works:
+HOW THIS FILE WORKS / WHY IT EXISTS
 
-This function calculates the 2D camera plane vector for a raycasting renderer. The camera plane is always perpendicular to the direction the player is facing, and its length is set so the rays spread out to match the desired field of view (FOV). By using tan(FOV/2), the math matches real-world projection, ensuring the view looks correct and not distorted. The aspect ratio scaling makes sure the FOV remains visually consistent even on wide or tall screens.
+Raycasting projects a 3D illusion by sending out a bundle of rays. We need a
+stable way to turn a screen X coordinate (left to right) into a direction in
+the world. The “camera plane” forms the sideways basis vector for that. The
+forward vector + plane vector span a little 2D slice; each ray direction is
+forward + plane * cameraX where cameraX runs from -1 → +1.
 
-Math summary:
-- The player's direction is (cos(angle), sin(angle)).
-- Rotating that by 90° gives (-sin(angle), cos(angle)), which is perpendicular.
-- The FOV is set by scaling this perpendicular vector by tan(FOV/2)[1][5][6].
-- The aspect ratio is applied to the X component to prevent stretching or squishing on non-square screens.
-
+Key points:
+- Forward direction = (cos(angle), sin(angle)).
+- Perpendicular = rotate 90° → (-sin(angle), cos(angle)).
+- Length = tan(FOV / 2) so the extreme rays sit exactly at the FOV edges.
+- Aspect ratio only scales X so wide monitors don’t artificially zoom out.
 */

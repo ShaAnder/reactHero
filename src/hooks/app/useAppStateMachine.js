@@ -1,6 +1,6 @@
 import { useReducer } from "react";
 
-// Our run status which will be utilized throughout the app
+// Run lifecycle statuses (kept small & explicit for clarity)
 export const RUN_STATUS = {
 	IDLE: "idle",
 	IN_PROGRESS: "inProgress",
@@ -8,11 +8,11 @@ export const RUN_STATUS = {
 	ABORTED: "aborted",
 };
 
-// Initial unified application state shape, which will be passed to reducer
-// - run: data about the current adventure/run
-// - ui: overlay / modal visibility flags
-// - exit: whether player stands on the exit tile (edge detection helper)
-// - meta: debug & timing metadata
+// Unified reducer state:
+// run  – current adventure configuration + progression
+// ui   – transient overlay/modal state
+// exit – tiny helper slice (player standing on exit tile?)
+// meta – instrumentation (last action, timing markers) for effects
 const initialState = {
 	run: {
 		environment: null,
@@ -33,23 +33,13 @@ const initialState = {
 	},
 };
 
-// Pure Reducer to allow us to utilize initial state without mutating it
+// Pure reducer (central transition table)
 function appStateMachineReducer(state, action) {
 	switch (action.type) {
 		// ================= RUN LIFECYCLE =================
 		case "START_RUN": {
-			// this means run already started
-			if (state.run.status === RUN_STATUS.IN_PROGRESS) {
-				console.log(
-					"[REDUCER] START_RUN ignored (already in progress)",
-					state.run
-				);
-				return state;
-			}
-			console.log("[REDUCER] START_RUN", {
-				env: action.env,
-				length: action.length,
-			});
+			// Ignore duplicate start attempts
+			if (state.run.status === RUN_STATUS.IN_PROGRESS) return state;
 			return {
 				...state,
 				run: {
@@ -64,37 +54,47 @@ function appStateMachineReducer(state, action) {
 			};
 		}
 		case "ABORT_RUN":
-			console.log("[REDUCER] ABORT_RUN");
 			return {
 				...state,
 				run: { ...state.run, status: RUN_STATUS.ABORTED },
 				meta: { ...state.meta, lastAction: action.type },
 			};
 		case "WIN_RUN":
-			console.log("[REDUCER] WIN_RUN");
 			return {
 				...state,
 				run: { ...state.run, status: RUN_STATUS.WON },
 				meta: { ...state.meta, lastAction: action.type },
 			};
 		case "RESET_RUN":
-			console.log("[REDUCER] RESET_RUN");
 			return {
 				...initialState,
 				meta: { ...initialState.meta, lastAction: action.type },
 			};
 
+		// ================= RUN CONFIG (pre-run adjustments) =================
+		case "SET_RUN_ENVIRONMENT": {
+			if (state.run.status !== RUN_STATUS.IDLE) return state; // lock during active run
+			if (state.run.environment === action.env) return state;
+			return {
+				...state,
+				run: { ...state.run, environment: action.env },
+				meta: { ...state.meta, lastAction: action.type },
+			};
+		}
+		case "SET_RUN_LENGTH": {
+			if (state.run.status !== RUN_STATUS.IDLE) return state;
+			if (state.run.length === action.length) return state;
+			return {
+				...state,
+				run: { ...state.run, length: action.length },
+				meta: { ...state.meta, lastAction: action.type },
+			};
+		}
+
 		// ================= PAUSE / OPTIONS / QUIT UI =================
 		case "SET_ACTIVE_MODAL":
-			// we can keep applying this without changing result (idempotent)
-			if (state.ui.activeModal === action.modal) {
-				console.log("[REDUCER] SET_ACTIVE_MODAL noop", action.modal);
-				return state;
-			}
-			console.log("[REDUCER] SET_ACTIVE_MODAL", {
-				from: state.ui.activeModal,
-				to: action.modal,
-			});
+			// Idempotent: re‑setting same modal returns previous state
+			if (state.ui.activeModal === action.modal) return state;
 			return {
 				...state,
 				ui: { ...state.ui, activeModal: action.modal },
@@ -103,14 +103,12 @@ function appStateMachineReducer(state, action) {
 
 		// ================= EXIT TILE & DELVE =================
 		case "PLAYER_STEPPED_ON_EXIT":
-			console.log("[REDUCER] PLAYER_STEPPED_ON_EXIT");
 			return {
 				...state,
 				exit: { onExitTile: true },
 				meta: { ...state.meta, lastAction: action.type },
 			};
 		case "PLAYER_LEFT_EXIT":
-			console.log("[REDUCER] PLAYER_LEFT_EXIT");
 			return {
 				...state,
 				exit: { onExitTile: false },
@@ -125,11 +123,6 @@ function appStateMachineReducer(state, action) {
 				return state;
 			const nextLevel = state.run.level + 1;
 			const finished = nextLevel > state.run.length;
-			console.log("[REDUCER] ADVANCE_LEVEL", {
-				current: state.run.level,
-				next: nextLevel,
-				finished,
-			});
 			return {
 				...state,
 				run: {
@@ -143,7 +136,6 @@ function appStateMachineReducer(state, action) {
 
 		// ================= LOADING META =================
 		case "SET_LOADING_START":
-			console.log("[REDUCER] SET_LOADING_START", action.at);
 			return {
 				...state,
 				meta: {
@@ -153,7 +145,6 @@ function appStateMachineReducer(state, action) {
 				},
 			};
 		case "CLEAR_LOADING_START":
-			console.log("[REDUCER] CLEAR_LOADING_START");
 			return {
 				...state,
 				meta: { ...state.meta, loadingStartAt: null, lastAction: action.type },
@@ -164,7 +155,7 @@ function appStateMachineReducer(state, action) {
 	}
 }
 
-// Hook wrapper: provides state + semantic action creators + derived helpers
+// Hook wrapper: exposes state, semantic action creators, and a few derived flags
 export function useAppStateMachine() {
 	const [state, dispatch] = useReducer(appStateMachineReducer, initialState);
 
@@ -174,6 +165,9 @@ export function useAppStateMachine() {
 		abortRun: () => dispatch({ type: "ABORT_RUN" }),
 		win: () => dispatch({ type: "WIN_RUN" }),
 		resetRun: () => dispatch({ type: "RESET_RUN" }),
+		// Pre-run configuration (only effective while IDLE)
+		setRunEnvironment: (env) => dispatch({ type: "SET_RUN_ENVIRONMENT", env }),
+		setRunLength: (length) => dispatch({ type: "SET_RUN_LENGTH", length }),
 		// Unified modal control
 		setActiveModal: (modal) => dispatch({ type: "SET_ACTIVE_MODAL", modal }), // modal null closes
 		// Exit tile detection
@@ -195,3 +189,22 @@ export function useAppStateMachine() {
 
 	return { state, actions, isRunActive, isFinalLevel };
 }
+
+/*
+HOW THIS FILE WORKS
+
+We centralize all coarse app transitions (run lifecycle + modal visibility)
+in a reducer so effects (loading, exit detection, pause logic) have one
+authoritative source of truth. Side‑effect hooks dispatch small semantic
+actions (e.g. playerSteppedOnExit) and UI consumes derived flags.
+
+Slices
+- run: adventure config + progression state
+- ui: which modal (if any) should be visible
+- exit: transient flag used to debounce exit tile logic
+- meta: timing / lastAction for orchestration hooks
+
+Why a reducer?
+- Predictable transitions, easier to test.
+- Enables time‑travel / debugging later if we add dev tooling.
+*/

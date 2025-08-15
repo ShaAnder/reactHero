@@ -1,15 +1,10 @@
 import { useRef, useEffect } from "react";
 import { MOUSE_SENSITIVITY } from "../../constants/playerConfig";
-import { DEFAULT_KEY_BINDINGS } from "../../constants/playerControlsConfig";
+// DEFAULT_KEY_BINDINGS import retained elsewhere; can remove if unused.
 
 /**
- * usePlayerControls
- *
- * This hook handles all the player's input:
- * - Keyboard movement (WASD + arrow keys)
- * - Mouse look (rotating view with pointer lock)
- *
- * It sets up event listeners and returns a `keys` ref that tracks which keys are held down.
+ * Unified input layer: keyboard + mouse look. Returns a ref of booleans so
+ * movement logic can read current intent without triggering React re-renders.
  */
 export const usePlayerControls = (
 	canvas,
@@ -17,10 +12,11 @@ export const usePlayerControls = (
 	keyBindings,
 	onToggleMap,
 	onToggleGameMenu,
-	gameState
+	gameState,
+	externalKeysRef
 ) => {
 	// --- Track pressed keys ---
-	const keys = useRef({
+	const internalKeysRef = useRef({
 		up: false,
 		down: false,
 		left: false,
@@ -30,6 +26,7 @@ export const usePlayerControls = (
 		map: false,
 		pause: false,
 	});
+	const keys = externalKeysRef || internalKeysRef;
 
 	// --- Keyboard Controls ---
 
@@ -52,12 +49,8 @@ export const usePlayerControls = (
 				}
 			} else if (key === keyBindings.pause) {
 				if (!keys.current.pause) {
-					console.log("[DEBUG] Pause keydown detected");
 					keys.current.pause = true;
-					if (onToggleGameMenu) {
-						console.log("[DEBUG] Calling onToggleGameMenu from pause key");
-						onToggleGameMenu();
-					}
+					if (onToggleGameMenu) onToggleGameMenu();
 				}
 			}
 		};
@@ -72,7 +65,6 @@ export const usePlayerControls = (
 			if (key === keyBindings.strafeRight) keys.current.strafeRight = false;
 			if (key === keyBindings.map) keys.current.map = false;
 			if (key === keyBindings.pause) {
-				console.log("[DEBUG] Pause keyup detected");
 				keys.current.pause = false;
 			}
 		};
@@ -84,6 +76,8 @@ export const usePlayerControls = (
 			document.removeEventListener("keydown", handleKeyDown);
 			document.removeEventListener("keyup", handleKeyUp);
 		};
+	// NOTE: we intentionally exclude `keys` (ref stable) to avoid needless re-subscribes.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [keyBindings, onToggleMap, onToggleGameMenu, gameState]);
 
 	// Reset keys ref only when leaving PLAYING
@@ -99,25 +93,33 @@ export const usePlayerControls = (
 			map: false,
 			pause: false,
 		};
+		// 'keys' is a ref (stable) so we intentionally omit it
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [gameState]);
 
 	// --- Mouse Controls ---
 	useEffect(() => {
-		if (!canvas) return; // Defensive guard: only attach if canvas is mounted
+		if (!canvas) return; // Only attach once canvas exists
 
 		const handleClick = () => {
-			if (canvas.requestPointerLock) {
-				canvas.requestPointerLock();
-			}
+			canvas.requestPointerLock?.();
 		};
 
+		// Throttle via requestAnimationFrame to avoid overwhelming React & reduce risk of cascading updates
+		let framePending = false;
 		const handleMouseMove = (e) => {
-			if (document.pointerLockElement === canvas) {
-				setPlayer((prev) => ({
-					...prev,
-					angle: prev.angle + e.movementX * MOUSE_SENSITIVITY,
-				}));
-			}
+			if (document.pointerLockElement !== canvas) return;
+			if (!setPlayer) return; // allow passing noop / undefined safely
+			if (framePending) return;
+			framePending = true;
+			requestAnimationFrame(() => {
+				framePending = false;
+				setPlayer((prev) => (
+					prev
+						? { ...prev, angle: prev.angle + e.movementX * MOUSE_SENSITIVITY }
+						: prev
+				));
+			});
 		};
 
 		canvas.addEventListener("click", handleClick);
@@ -127,22 +129,29 @@ export const usePlayerControls = (
 			canvas.removeEventListener("click", handleClick);
 			document.removeEventListener("mousemove", handleMouseMove);
 		};
-	}, [canvas, setPlayer]);
+		// Depend only on canvas; setPlayer (state setter) is stable and safe to omit.
+		// setPlayer is a React state setter (stable identity); exhaustive-deps safe to omit
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [canvas]);
 
 	return keys;
 };
 
 /*
-How this hook works:
+HOW THIS HOOK WORKS
 
-- usePlayerControls tracks player input by managing keyboard and mouse events.
-- It sets up listeners for keydown and keyup on the window to know which keys are currently pressed.
-- The `keys` ref stores this state and is read by the game loop to decide movement every frame.
-- For mouse input, it requests pointer lock on the canvas click to capture raw mouse movement.
-- While pointer lock is active, mouse movements update the player's angle smoothly based on sensitivity.
-- Cleanup handlers ensure event listeners are properly removed when the component using this hook unmounts.
-- Returning `keys` as a ref allows other hooks or components to read real-time input without causing extra renders.
+Keyboard
+- On entering PLAYING we attach keydown/keyup listeners and mutate the ref.
+- On leaving PLAYING we reset all flags so stale presses don’t leak.
 
-- The mouse controls effect now depends on `canvasRef.current`, so it always attaches to the correct canvas element, even after remounts.
-- The defensive guard (`if (!canvas) return;`) ensures listeners are only attached when the canvas is mounted.
+Mouse
+- Click canvas → requestPointerLock so we get raw relative movement.
+- While locked we adjust player.angle by movementX * sensitivity.
+
+Why use a ref?
+- Reading per frame without setState avoids extra component renders.
+
+Extensibility Notes
+- Add more actions (inventory, interact) by extending the ref shape.
+- For configurable controls, pass a different keyBindings map.
 */

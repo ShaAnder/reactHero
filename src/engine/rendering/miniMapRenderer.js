@@ -1,61 +1,57 @@
 import { TILE_SIZE } from "../../../gameConfig";
 
-// This function draws a scrolling minimap that always keeps the player in the center.
-// Only a chunk of the map is shown at once, and it smoothly follows the player's movement.
-//
-// context: CanvasRenderingContext2D to draw on
-// player: player object with x, y (in pixels) and angle (in radians)
-// map: 2D array of the level (0 = floor, 1 = wall)
+// Scrolling minimap (player fixed in center, world scrolls underneath).
+// Shows only a square window of tiles for clarity + performance.
 
 export const renderMinimap = (context, player, map) => {
-	// Bail if map is empty or missing
+	// No map yet? Nothing to draw.
 	if (!map || !map.length || !map[0].length) return;
 
-	// Minimap settings: how many tiles are visible, how big each tile is, and margin from the edge
+	// Core layout settings (viewport footprint + tile pixel size)
 	const MINIMAP_TILE_SIZE = 9;
 	const VIEWPORT_TILES = 15;
 	const MINIMAP_SIZE = VIEWPORT_TILES * MINIMAP_TILE_SIZE;
 	const MINIMAP_MARGIN = 20;
 
-	// Get map dimensions
+	// Whole map bounds
 	const MAP_NUM_ROWS = map.length;
 	const MAP_NUM_COLS = map[0].length;
 
-	// Figure out where to draw the minimap box (top-right corner, with a margin)
+	// Anchor the minimap top‑right with a margin
 	const minimapX = context.canvas.width - MINIMAP_SIZE - MINIMAP_MARGIN;
 	const minimapY = MINIMAP_MARGIN;
 
-	// Draw the minimap background
+	// Background panel
 	context.fillStyle = "#111";
 	context.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
-	// Clip drawing to the minimap area so nothing spills out
+	// Constrain all tile draws inside the panel rectangle
 	context.save();
 	context.beginPath();
 	context.rect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 	context.clip();
 
-	// Center the minimap camera on the player (convert player pixel pos to tile units)
+	// Player position in tile coordinates (fractional → enables smooth scroll)
 	const cameraCenterTileX = player.x / TILE_SIZE;
 	const cameraCenterTileY = player.y / TILE_SIZE;
 
-	// Figure out which tile is at the top-left of the minimap view
+	// Top‑left tile coordinate of the window
 	const topLeftTileX = cameraCenterTileX - VIEWPORT_TILES / 2;
 	const topLeftTileY = cameraCenterTileY - VIEWPORT_TILES / 2;
 	const startCol = Math.floor(topLeftTileX);
 	const startRow = Math.floor(topLeftTileY);
 
-	// Sub-tile offset for smooth scrolling as the player moves between tiles
+	// Sub‑tile fractional offsets so scroll is smooth (not jumpy per tile)
 	const offsetX = (topLeftTileX - startCol) * MINIMAP_TILE_SIZE;
 	const offsetY = (topLeftTileY - startRow) * MINIMAP_TILE_SIZE;
 
-	// Loop through just the visible tiles in the minimap viewport
+	// Loop only visible window (avoid iterating whole map each frame)
 	for (let row = 0; row <= VIEWPORT_TILES; row++) {
 		for (let col = 0; col <= VIEWPORT_TILES; col++) {
 			const mapRow = startRow + row;
 			const mapCol = startCol + col;
 
-			// Skip tiles that are outside the actual map
+			// Skip anything outside map bounds
 			if (
 				mapRow < 0 ||
 				mapRow >= MAP_NUM_ROWS ||
@@ -66,25 +62,25 @@ export const renderMinimap = (context, player, map) => {
 
 			const tileType = map[mapRow][mapCol];
 
-			// Calculate where to draw this tile on the minimap
+			// Pixel destination inside minimap panel
 			const drawX = minimapX + col * MINIMAP_TILE_SIZE - offsetX;
 			const drawY = minimapY + row * MINIMAP_TILE_SIZE - offsetY;
 
-			// Draw wall tiles dark, floor tiles white
+			// Simple palette: dark = wall, light = walkable
 			context.fillStyle = tileType === 1 ? "#222" : "#fff";
 			context.fillRect(drawX, drawY, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
 		}
 	}
 
-	// Restore context to remove the minimap clipping
+	// Remove clipping region
 	context.restore();
 
-	// Draw a border around the minimap for style
+	// Thin outline
 	context.lineWidth = 2;
 	context.strokeStyle = "black";
 	context.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
-	// Draw the player as a red dot in the center of the minimap
+	// Player marker (always centered)
 	const centerX = minimapX + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
 	const centerY = minimapY + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
 
@@ -93,7 +89,7 @@ export const renderMinimap = (context, player, map) => {
 	context.arc(centerX, centerY, MINIMAP_TILE_SIZE / 2, 0, Math.PI * 2);
 	context.fill();
 
-	// Draw a line showing the player's facing direction
+	// Tiny facing direction line
 	context.strokeStyle = "red";
 	context.beginPath();
 	context.moveTo(centerX, centerY);
@@ -103,16 +99,27 @@ export const renderMinimap = (context, player, map) => {
 	);
 	context.stroke();
 };
-
 /*
-How this file works:
+HOW THIS FILE WORKS
 
-This function renders a dynamic minimap that scrolls with the player, acting like a little moving camera that shows only a piece of the world map. The minimap is always centered on the player’s position, and smoothly scrolls as the player moves—even between tiles—thanks to fractional offsets. The visible area is a square chunk of the map, and only those tiles are drawn for performance. Walls and floors are colored differently, and the player’s position is always marked in the center with a red dot and a little direction line. The minimap is clipped so nothing draws outside its box, and a border is added for a clean look.
+Goal
+Provide a compact, always‑centered window of the surrounding dungeon so the
+player can orient without revealing the entire layout at once.
 
-Math summary:
-- The minimap camera is centered on the player by converting their pixel position to tile units.
-- Sub-tile offsets allow for smooth scrolling, not just tile-by-tile jumps.
-- Only the visible chunk of the map is drawn, improving performance and clarity.
+Key Ideas
+- The player sits visually fixed in the middle; world tiles scroll.
+- We compute the fractional (not just integer) tile position for smooth
+	motion while moving between grid squares.
+- Only a small square of tiles is iterated – big maps stay cheap.
+- Clipping keeps drawing contained to a neat panel.
 
-This setup gives players a clear, limited view of their surroundings without revealing the whole map
+Math (plain language)
+- Player pixel position → divide by TILE_SIZE → tile coordinates with
+	decimals (e.g. 10.42). That fractional part becomes an offset so we slide
+	tiles instead of snapping each time we cross into a new tile.
+
+Future Enhancements
+- Fog of war (mask unexplored tiles).
+- Color coding exits, spawn, enemies.
+- Toggle visibility with a key or dev flag.
 */

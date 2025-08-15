@@ -4,17 +4,29 @@ import { getFurthestFloor } from "../utils/getFurthestTile";
 import { DEFAULT_MAP_CONFIG } from "../../../../../gameConfig";
 import { caStep } from "./cavernUtils/caStep";
 
-/**
- * Generates a cave map using cellular automata, with robust spawn handling and diagnostics.
- *
- * - Initializes a noisy map (random walls/floors).
- * - Iteratively smooths the map using CA rules.
- * - Carves a guaranteed spawn room away from the edges.
- * - Ensures map borders are always walls.
- * - Picks start and exit points on floor tiles.
- * - Validates that a path exists between them.
- * - Returns { map, start, exit }.
- */
+/*
+HOW THIS FILE WORKS / CAVERN GENERATION
+
+Goal: produce an “organic” cave with a guaranteed safe spawn and a distant
+exit that encourages exploration.
+
+Recipe each attempt:
+1. Fill a fresh blank grid with random walls vs floors (noise field).
+2. Run several Cellular Automata smoothing passes so isolated pixels merge
+	into chunky blobs that feel cave‑like.
+3. Force outer border to all walls (no leaking off the map edges).
+4. Carve a small spawn room (3x3) somewhere safely padded from edges so
+	the player always starts in open space.
+5. Count total and reachable floor tiles (diagnostics + early rejection of
+	cramped or isolated starts).
+6. Find the furthest reachable floor from the spawn (simple BFS utility) –
+	this becomes our exit so the player crosses the cave.
+7. Validate there is an actual path from start to exit (connectivity + both
+	on open tiles). If anything fails, retry.
+
+We cap attempts to avoid infinite loops. Detailed console warnings help tune
+parameters when generation is too strict.
+*/
 export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 	const dimensions = options.dimensions;
 	const fillProbability = options.fillProbability || 0.45;
@@ -30,7 +42,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 	while (!valid && attempts < maxAttempts) {
 		attempts++;
 		try {
-			// STEP 1: Randomly fill the map
+			// Random noise fill (Bernoulli trial per cell)
 			map = getBlankMap(1, dimensions);
 			for (let y = 0; y < dimensions; y++) {
 				for (let x = 0; x < dimensions; x++) {
@@ -38,12 +50,12 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				}
 			}
 
-			// STEP 2: Use Cellular Automata to smooth the map
+			// CA smoothing: clumps walls / expands pockets creating natural blobs
 			for (let i = 0; i < iterations; i++) {
 				map = caStep(map);
 			}
 
-			// STEP 3: Force map borders to be walls (prevents open edges)
+			// Hard border walls so the player never walks out of bounds
 			for (let i = 0; i < dimensions; i++) {
 				map[0][i] = 1;
 				map[dimensions - 1][i] = 1;
@@ -51,7 +63,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				map[i][dimensions - 1] = 1;
 			}
 
-			// STEP 4: Carve a spawn room at a safe, padded location
+			// Carve spawn room: ensure guaranteed breathable space to start
 			const spawnX =
 				padding + Math.floor(Math.random() * (dimensions - 2 * padding));
 			const spawnY =
@@ -75,7 +87,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 			}
 			start = [spawnX, spawnY];
 
-			// DIAGNOSTIC: Count total and reachable floor tiles
+			// Diagnostics: reject caves that are basically solid walls
 			let floorCount = 0;
 			for (let y = 0; y < dimensions; y++)
 				for (let x = 0; x < dimensions; x++) if (map[y][x] === 0) floorCount++;
@@ -86,7 +98,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				continue;
 			}
 
-			// Optional: Flood fill from spawn to check connectivity (simple BFS)
+			// Connectivity from spawn: if isolated, pick a new noise sample
 			let reachableCount = countReachable(map, start);
 			if (reachableCount < 10) {
 				console.warn(
@@ -95,7 +107,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				continue;
 			}
 
-			// STEP 5: Pick exit as the furthest walkable tile from start
+			// Goal selection: furthest reachable floor tile encourages traversal
 			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
 			if (!rawExit) {
 				console.warn(
@@ -109,7 +121,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				continue;
 			}
 
-			// STEP 6: Validate connectivity
+			// Final validation: ensure path exists start -> exit
 			valid = validateMap(map, [start[1], start[0]], [exit[1], exit[0]]);
 			if (!valid) {
 				console.warn(
@@ -118,7 +130,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				continue;
 			}
 
-			// Defensive: Ensure spawn and exit are on walkable tiles
+			// Defensive sanity: ensure both endpoints are truly open
 			if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
 				console.warn(
 					`[CavernGen] Attempt ${attempts}: Spawn or exit is not on a walkable tile`
@@ -139,7 +151,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 	return { map, start, exit };
 };
 
-// Helper: Simple BFS to count reachable floor tiles from a point
+// BFS reachability count from spawn: helps reject isolated or tiny pockets
 function countReachable(map, start) {
 	const [sx, sy] = start;
 	const rows = map.length;
@@ -177,15 +189,8 @@ function countReachable(map, start) {
 }
 
 /*
-How this function works:
-
-- Fills a blank map with random walls and floors based on a fill probability.
-- Applies several iterations of cellular automata rules to smooth the cave structure[3][5].
-- Forces all map borders to be walls so there are no open edges.
-- Carves a 3x3 spawn room at a random, padded location away from the map edge, guaranteeing the player always starts in a valid open area.
-- Counts total and reachable floor tiles for diagnostics.
-- Ensures the spawn room is connected to a sufficiently large open area.
-- Picks the exit as the furthest walkable tile from the start, ensuring maximum traversal.
-- Validates that the map is fully traversable from start to exit.
-- Robust error handling and logging ensures the map is always valid, never carves outside the map boundary, and never places the spawn at the edge or in an isolated pocket.
+SUMMARY
+We throw random noise, smooth it, carve a safe spawn, pick the furthest tile
+as an exit, validate connectivity, retry on failure. Warnings surface why a
+given attempt failed so tuning is straightforward.
 */

@@ -37,8 +37,8 @@ const GameScreen = ({
 				if (screen.orientation && screen.orientation.lock) {
 					await screen.orientation.lock("landscape");
 				}
-			} catch (error) {
-				console.log("Orientation lock not supported or failed:", error);
+			} catch {
+				// Orientation lock may not be supported; ignore silently
 			}
 		};
 
@@ -50,8 +50,8 @@ const GameScreen = ({
 				if (screen.orientation && screen.orientation.unlock) {
 					screen.orientation.unlock();
 				}
-			} catch (error) {
-				console.log("Orientation unlock failed:", error);
+			} catch {
+				// Ignore
 			}
 		};
 	}, []);

@@ -2,17 +2,12 @@ import { generateForest } from "./forest/forestMap";
 import { generateCavern } from "./cavern/cavernMap";
 import { DEFAULT_MAP_CONFIG } from "../../../../gameConfig";
 
-/**
- * Main map generator controller.
- * Delegates to the appropriate algorithm based on environment.
- *
- * @param {Object} options - Map config (dimensions, environment, etc.)
- * @returns {{ map: number[][], start: [number, number], exit: [number, number] }}
- */
+// High‑level dispatcher: pick the concrete terrain algorithm based on
+// requested environment and return its map + points of interest.
 export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
 	const environment = options.environment || "forest";
 
-	// swtich setup with our enviornments, whatever user selects will be our randomly generated tileset
+	// Branch to the concrete generator
 	switch (environment) {
 		case "forest":
 		default:
@@ -21,24 +16,24 @@ export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
 			return generateCavern(options);
 	}
 };
-
 /*
-How this function works:
+HOW THIS FILE WORKS
 
-This function acts as the central controller for procedural map generation in the game.
+Purpose
+Single entry point for procedural level creation. You hand it a config (or
+let it fall back to defaults) and it routes to the specific algorithm meant
+for that biome / style.
 
-- Accepts a configuration object specifying the desired environment and map parameters.
-- Determines which map generation algorithm to use based on the selected environment.
-- Delegates the map creation process to the appropriate helper function:
-  - For "forest", uses a Voronoi-based generator with organic clearings and winding paths.
-  - For "cavern", uses a cellular automata generator for natural, cavernous spaces.
-- Each helper returns a map, a start position, and an exit position, ensuring the layout is playable and fits the environment's style.
-- Returns the result as an object: { map, start, exit }.
+Currently Supported
+- forest: region seeds + Voronoi + relaxed + organic clearing carving +
+  random walkers.
+- cavern: noisy fill + iterative cellular automata smoothing + spawn room.
 
-Example result structure:
-{
-  map: [[],[],[]],
-  start: [10, 12],
-  exit: [55, 60]
-}
+Return Shape
+{ map, start, exit }
+Where map is a 2D array (0 floor, 1 wall), start/exit are [x, y] tile coords.
+
+Why centralize this?
+- Future environments (ruins, ice, lava) only require adding a case.
+- Lets higher‑level code stay ignorant of implementation details.
 */

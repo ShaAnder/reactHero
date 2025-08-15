@@ -6,10 +6,29 @@ import { DEFAULT_MAP_CONFIG } from "../../../../../gameConfig";
 import { carveOrganicClearing } from "./forestUtils/carveOrganicRoom";
 import { relaxSeeds } from "./forestUtils/relaxedSeeds";
 
-/**
- * Generates a forest map with robust error handling, guaranteed clearing spawn,
- * Lloyd's Voronoi relaxation, and organic clearing carving.
- */
+/*
+HOW THIS FILE WORKS / FOREST GENERATION
+
+We simulate a cluster of forest clearings linked by winding paths.
+
+Attempt loop outline:
+1. Carve a guaranteed spawn clearing somewhere safely padded from edges.
+2. Scatter seed points for other clearings (avoid clumping very tight).
+3. Assign each tile to its nearest seed (Voronoi partition using squared
+	distance for speed) creating coarse regions.
+4. Optionally relax seeds (Lloyd style) to nudge them toward their region
+	centroids for a more balanced spread.
+5. Carve an organic clearing around each seed (variable radius / blobby carve).
+6. Connect clearings using a random‑walk tunneler (meandering natural paths).
+7. Pick the furthest reachable floor tile from spawn as the exit so the
+	player naturally traverses the space.
+8. Validate connectivity (BFS). Retry if anything fails.
+
+Design goals:
+- Guaranteed safe start.
+- Variety from seed jitter + organic carving.
+- Natural path layout via walkers instead of straight corridors.
+*/
 export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 	const dimensions = options.dimensions || 65;
 	const numClearings = options.numRegions || 10;
@@ -30,7 +49,7 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 	while (!valid && attempts < maxAttempts) {
 		attempts++;
 		try {
-			// STEP 1: Carve a spawn clearing first (guaranteed clearing)
+			// Guaranteed spawn clearing first so we always have a valid start
 			map = getBlankMap(1, dimensions);
 			const spawnX =
 				padding +
@@ -54,7 +73,7 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 			}
 			start = [spawnCenter[1], spawnCenter[0]]; // [x, y]
 
-			// STEP 2: Place random seeds for clearings, first seed is spawn
+			// Scatter seed points (first is spawn) with slight spacing constraint
 			let seeds = [{ x: spawnCenter[1], y: spawnCenter[0] }];
 			for (let i = 1; i < numClearings; i++) {
 				let sx,
@@ -81,7 +100,7 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 				seeds.push({ x: sx, y: sy });
 			}
 
-			// STEP 3: Assign each tile to nearest seed (Voronoi region)
+			// Voronoi assignment (squared distance) -> region indices per tile
 			const regionMap = getBlankMap(-1, dimensions);
 			for (let y = 0; y < dimensions; y++) {
 				for (let x = 0; x < dimensions; x++) {
@@ -100,10 +119,10 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 				}
 			}
 
-			// STEP 3.5: Lloyd's relaxation for organic clearing placement
+			// Optional Lloyd-like relaxation to avoid clustered seeds
 			seeds = relaxSeeds(seeds, regionMap, dimensions, relaxationIterations);
 
-			// STEP 4: Hollow out center of each region as an organic clearing
+			// Carve an organic blob clearing for each seed
 			let roomCenters = [];
 			for (let i = 0; i < seeds.length; i++) {
 				const { x, y } = seeds[i];
@@ -115,21 +134,21 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 			}
 			if (roomCenters.length < 2) throw new Error("Too few clearings");
 
-			// STEP 5: Connect clearings with random walker
+			// Random walker tunneling to connect clearings with natural winding paths
 			initRandomWalker(map, roomCenters, walkerPresets);
 
-			// STEP 6: Pick exit point far from start
+			// Exit selection: furthest reachable floor from spawn
 			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
 			if (!rawExit) throw new Error("Failed to find exit tile");
 			exit = [rawExit[1], rawExit[0]];
 			if (exit[0] === start[0] && exit[1] === start[1])
 				throw new Error("Exit same as start");
 
-			// STEP 7: Validate connectivity
+			// Connectivity validation (BFS in validateMap)
 			valid = validateMap(map, [start[1], start[0]], [exit[1], exit[0]]);
 			if (!valid) throw new Error("Map validation failed (no path start→exit)");
 
-			// Defensive: Ensure spawn and exit are on walkable tiles
+			// Defensive sanity: both endpoints must be open tiles
 			if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
 				throw new Error("Spawn or exit is not on a walkable tile");
 			}
@@ -148,17 +167,9 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 };
 
 /*
-How this file works:
-
-This function generates a forest-style dungeon map using a mix of Voronoi-based region assignment and organic room carving. It guarantees the player spawns in a walkable clearing and ensures there's always a path to the exit. First, it places a guaranteed 3x3 spawn clearing. Then it randomly scatters seed points for other forest clearings, assigning each tile to its nearest seed to form Voronoi regions. Lloyd’s relaxation shifts the seeds toward the center of their regions, creating more balanced and natural clearing layouts.
-
-Each seed is then used as the center of an organically shaped clearing. The clearings are connected using a random walker algorithm that tunnels winding paths between them. Finally, the function picks a tile far from the spawn to place the exit, and uses BFS to validate that the exit is reachable. If any step fails, it retries generation up to 60 times.
-
-Math summary:
-- Voronoi regions are assigned using squared Euclidean distance.
-- Lloyd's relaxation iteratively moves seeds to the centroid of their assigned tiles.
-- Clearings are carved using organic blob shapes based on radius.
-- Walkers use random-length tunneling and occasional branching/looping.
-- getFurthestFloor uses BFS to find the tile furthest from the start.
-- Map is validated with BFS to ensure connectivity from start to exit.
+SUMMARY
+Random seed scattering + Voronoi partition + optional relaxation gives evenly
+distributed candidates. Each becomes an organic clearing; a random walker
+connects them; furthest tile becomes exit. Connectivity validated; retries
+ensure playability.
 */

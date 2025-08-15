@@ -1,75 +1,70 @@
-// I use this hook to run my game loop at a steady pace, using requestAnimationFrame.
+// Fixed timestep game loop built on requestAnimationFrame.
 import { useRef, useState, useEffect, useCallback } from "react";
 import { FRAME_DURATION } from "../../../gameConfig";
 
 /**
- * useGameLoop
- *
- * This is my custom hook for running a fixed-timestep game loop.
- * I make sure the game updates and draws at a consistent rate (about 60 times per second).
- * I keep the update logic and the rendering separate, and I track the real FPS so I can show it in the UI.
- *
- * @param {Function} updateCallback - This is where I update the game logic (like moving the player).
- * @param {Function} renderCallback - This is where I draw the current frame (like rendering the canvas).
- * @returns {number} fps - I return the real FPS so I can display it.
+ * Fixed timestep loop: calls update at a constant simulated frame rate while
+ * letting rendering run each animation frame. Tracks real FPS for display.
+ * @param {(dt:number)=>void} updateCallback
+ * @param {(dt:number)=>void} renderCallback
+ * @returns {number} measured frames per second (smoothed per second)
  */
 export const useGameLoop = (updateCallback, renderCallback) => {
-	// I keep track of the current FPS so I can show it in the UI.
+	// Latest measured FPS
 	const [fps, setFps] = useState(0);
 
-	// I use refs to keep track of animation frame IDs and timing.
+	// Timing accumulators and bookkeeping (refs so they persist without rerenders)
 	const requestIdRef = useRef(null);
 	const previousTimeRef = useRef();
 	const accumulatorRef = useRef(0);
 	const fpsCounterRef = useRef(0);
 	const lastFpsUpdateRef = useRef(0);
 
-	// This is the main loop. I use useCallback so it doesn't change every render.
+	// Main RAF callback (stable identity via useCallback)
 	const loop = useCallback(
 		(timestamp) => {
-			// On the first frame, I set up my timestamps.
+			// First tick bootstrap
 			if (previousTimeRef.current === undefined) {
 				previousTimeRef.current = timestamp;
 				lastFpsUpdateRef.current = timestamp;
 			}
 
-			// I calculate how much time has passed since the last frame.
+			// Wall-clock delta since last frame (ms)
 			const deltaMs = timestamp - previousTimeRef.current;
 			previousTimeRef.current = timestamp;
 			accumulatorRef.current += deltaMs;
 
-			// If the game lags, I cap the accumulator so we don't try to catch up too much at once.
+			// Cap runaway accumulation (avoid spiral of death)
 			if (accumulatorRef.current > 3 * FRAME_DURATION) {
 				accumulatorRef.current = FRAME_DURATION;
 			}
 
-			// I only update the game if enough time has passed for a new frame.
+			// Consume one fixed slice at a time
 			if (accumulatorRef.current >= FRAME_DURATION) {
-				// Fixed update step in seconds
+				// Fixed step in seconds
 				const deltaTime = FRAME_DURATION / 1000;
 
-				// Count this frame for FPS calculation
+				// Count frame toward FPS once per update
 				fpsCounterRef.current++;
 
-				// Update FPS once per second
+				// Publish FPS every 1s interval
 				if (timestamp - lastFpsUpdateRef.current >= 1000) {
 					setFps(fpsCounterRef.current);
 					fpsCounterRef.current = 0;
 					lastFpsUpdateRef.current = timestamp;
 				}
 
-				// Update game state logic
+				// Advance deterministic simulation
 				if (updateCallback) updateCallback(deltaTime);
 
-				// Render the current frame
+				// Draw current world snapshot (can be separated if needed)
 				if (renderCallback) renderCallback(deltaTime);
 
-				// Subtract only one frame's worth of time
-				// (we don’t reset to 0 in case of lag buildup)
+				// Remove exactly one quantum; leave remainder for next loop
 				accumulatorRef.current -= FRAME_DURATION;
 			}
 
-			// Schedule the next frame
+			// Queue next frame
 			requestIdRef.current = requestAnimationFrame(loop);
 		},
 		[updateCallback, renderCallback]

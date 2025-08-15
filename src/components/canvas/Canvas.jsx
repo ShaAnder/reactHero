@@ -21,20 +21,7 @@ const Canvas = forwardRef(({ width, height, style }, ref) => {
 		}
 	}, [canvasSize, ref]);
 
-	useEffect(() => {
-		if (ref?.current) {
-			console.log(
-				"[Canvas] Internal size:",
-				ref.current.width,
-				ref.current.height
-			);
-			console.log(
-				"[Canvas] CSS size:",
-				ref.current.style.width,
-				ref.current.style.height
-			);
-		}
-	}, [canvasSize, ref]);
+	// Debug size logging removed for production cleanliness
 
 	return <canvas ref={ref} style={style} />;
 });

@@ -4,7 +4,6 @@ const RunSettingsScreen = ({
 	setGameState,
 	environment,
 	setEnvironment,
-	setRegenKey,
 	adventureLength,
 	setAdventureLength,
 }) => (
@@ -70,7 +69,6 @@ const RunSettingsScreen = ({
 			className="screen-button"
 			style={{ marginTop: 24 }}
 			onClick={() => {
-				setRegenKey((prev) => prev + 1);
 				setGameState("loading");
 			}}
 		>

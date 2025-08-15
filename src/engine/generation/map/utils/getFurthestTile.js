@@ -1,60 +1,45 @@
-/**
- * Finds a random floor tile (value === 0) that is at least `minDistance` away
- * from the given starting point. Used for placing exits, enemies, or objectives far
- * from the player’s spawn. If no tile is far enough, returns the start point as a fallback.
- *
- * @param {number[][]} map - 2D grid of the dungeon where 0 = floor, 1 = wall
- * @param {[number, number]} start - Starting tile coordinate [row, col] (usually player spawn)
- * @param {number} minDistance - Minimum allowed distance from start (default is 20 tiles)
- * @returns {[number, number]} A randomly chosen far-enough floor tile, or the start if none found
- */
+/*
+HOW THIS FUNCTION WORKS
+Pick a random floor tile at least minDistance away from start. If none qualify,
+fallback to the start itself so callers always receive a valid coordinate.
+*/
 export const getFurthestFloor = (map, start, minDistance = 20) => {
-  // Deconstruct the start position into sy (row) and sx (col)
-  const [sy, sx] = start;
+	// Start broken into row/col for clarity
+	const [sy, sx] = start;
 
-  // Array to hold valid floor tiles that meet distance requirement
-  const validTiles = [];
+	// Collect all candidate floor tiles beyond threshold
+	const validTiles = [];
 
-  // Scan the entire map for walkable tiles that are far enough away
-  for (let y = 0; y < map.length; y++) {
-    for (let x = 0; x < map[y].length; x++) {
-      // Check if the tile is floor (walkable)
-      if (map[y][x] === 0) {
-        // Calculate Euclidean distance between current tile and start
-        const dx = x - sx;
-        const dy = y - sy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+	// Full scan: map size small enough that O(n) each call is fine
+	for (let y = 0; y < map.length; y++) {
+		for (let x = 0; x < map[y].length; x++) {
+			// Only consider walkable tiles
+			if (map[y][x] === 0) {
+				// Euclidean distance (diagonal OK, we just want “far away” feel)
+				const dx = x - sx;
+				const dy = y - sy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // If the distance is greater or equal to minimum, add to validTiles
-        if (dist >= minDistance) {
-          validTiles.push([y, x]);
-        }
-      }
-    }
-  }
+				// Keep only if it meets threshold
+				if (dist >= minDistance) {
+					validTiles.push([y, x]);
+				}
+			}
+		}
+	}
 
-  // Choose a random valid tile from the list if any exist
-  if (validTiles.length > 0) {
-    const randomIndex = Math.floor(Math.random() * validTiles.length);
-    return validTiles[randomIndex];
-  }
+	// Random pick among candidates
+	if (validTiles.length > 0) {
+		const randomIndex = Math.floor(Math.random() * validTiles.length);
+		return validTiles[randomIndex];
+	}
 
-  // Otherwise, return the start position as a fallback
-  return start;
+	// Fallback: nothing far enough, reuse start
+	return start;
 };
 
 /*
-How this file works:
-
-This function searches the entire map for floor tiles (value 0) that are at least a certain distance away from the given start point. It measures the straight-line (Euclidean) distance from each floor tile to the start, collects all tiles that meet or exceed the minimum distance, and then picks one at random. If no such tile exists, it simply returns the start point as a safe fallback.
-
-Math summary:
-- Uses the classic Euclidean distance formula: sqrt((x2-x1)^2 + (y2-y1)^2).
-- Randomly selects from the valid options using Math.random and Math.floor.
-
-Why this is useful:
-- Makes sure objectives, exits, or enemies aren’t too close to the player’s spawn.
-- Encourages exploration and ensures a more interesting, spread-out map.
-- Adds randomness but always guarantees a valid location.
-
+SUMMARY
+Scan all floors, keep those far enough, pick one at random. Guarantees some
+return value (never undefined) even on tiny cramped maps.
 */

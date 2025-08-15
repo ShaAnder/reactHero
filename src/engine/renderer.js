@@ -1,31 +1,28 @@
-// Import the minimap renderer
+// Minimap overlay (top‑down view)
 import { renderMinimap } from "./rendering/miniMapRenderer";
-
-// Import the core 3D raycasting renderer
+// Core wall / perspective renderer
 import { rayCaster } from "./rendering/raycaster";
-
-// Game constants (field of view, etc.)
+// Field of view constant
 import { FOV_ANGLE } from "../../gameConfig";
-
-// Utility to calculate the camera plane based on player angle and FOV
+// Camera plane math helper
 import { getCameraPlane } from "../helpers/getCameraPlane";
 
-// This function sets up and runs the raycasting engine to draw the 3D scene.
-// It calculates the camera plane (which determines the FOV and how wide the rays fan out),
-// then calls the rayCaster to actually render the 3D view.
+// Draw just the 3D scene (walls) using the raycasting pipeline.
+// We figure out the camera plane (how wide the vision fan is) and pass
+// everything to the low‑level rayCaster which does the heavy lifting.
 export const renderRaycaster = (context, player, map) => {
 	const screenWidth = context.canvas.width;
 	const screenHeight = context.canvas.height;
 	const aspectRatio = screenWidth / screenHeight;
 
-	// Field of view in radians (60 degrees is a common default)
+	// Field of view in radians (60° is a classic comfortable FOV)
 	const FOV = FOV_ANGLE;
 
-	// The camera plane is perpendicular to the player's view direction.
-	// It controls how wide the FOV is and is scaled by the aspect ratio.
+	// The camera plane is a perpendicular vector that controls how wide
+	// the rays fan out across the screen (the perceived FOV).
 	const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
 
-	// Run the raycasting renderer to draw walls and perspective-correct geometry
+	// Ask the core rayCaster to fill in the vertical wall slices
 	rayCaster({
 		player,
 		planeX,
@@ -37,25 +34,35 @@ export const renderRaycaster = (context, player, map) => {
 	});
 };
 
-// Main rendering function called every frame.
-// It handles both the 3D scene and the top-down minimap.
+// Master per‑frame render: 3D scene first, then overlays (minimap etc.).
 export const render = (context, player, map) => {
-	renderRaycaster(context, player, map); // Render the 3D environment
-	renderMinimap(context, player, map); // Draw minimap overlay for debug/navigation
+	// Render the 3D environment
+	renderRaycaster(context, player, map);
+	// Render the small scrolling minimap in a corner
+	renderMinimap(context, player, map);
 };
 
 /*
-How this file works:
+HOW THIS FILE WORKS
 
-This is the top-level rendering system, called every frame to update the visuals.
+This module is the “director” for everything drawn each frame. It keeps
+policy (what gets drawn, and in what order) separate from the low‑level
+pixel math.
 
-Here's the flow:
-1. `renderRaycaster()`:
-  - Calculates the FOV and camera plane based on the player's angle and the screen's aspect ratio.
-  - Passes everything to `rayCaster()`, which handles the actual 3D wall rendering using raycasting.
-2. `renderMinimap()`:
-  - Draws a top-down 2D view of the map and the player's position.
-  - Useful for debugging and helping the player navigate.
+Flow each frame:
+1. Compute the camera plane vector from the player’s angle + FOV so the
+   ray caster knows how the screen maps to world directions.
+2. Call rayCaster – it shoots one vertical ray per screen column, finds
+   wall hit distances, and paints vertical slices (classic Wolf3D style).
+3. Draw the minimap overlay so you can still orient yourself or debug
+   generation.
 
-Think of this file as the "director" of rendering: it doesn't do the drawing itself, but tells the raycaster and minimap when and how to render each frame. As the game grows, this is where you'd add more features like enemies, pickups, or HUD elements, but for now it gives you a clean, foundational render loop[1][2][3][4][5][6][7][8].
+Why keep this thin?
+- Easier to add more overlay layers later (HUD, entities, particles).
+- Lets us refactor internal rendering (e.g. sprites) without touching
+  game loop code.
+
+Future extension ideas:
+- Add a world object so render({context, world}) can include enemies.
+- Conditional minimap (only in dev or when a key is held).
 */

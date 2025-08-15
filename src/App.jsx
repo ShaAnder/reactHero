@@ -1,9 +1,12 @@
 import SettingsScreen from "./gameScreens/SettingsScreen";
 // IMPORTS //
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useAppStateMachine, RUN_STATUS } from "./hooks/app/useAppStateMachine";
+import { useLoadingTransition } from "./hooks/app/useLoadingTransition";
+import { useExitDetection } from "./hooks/app/useExitDetection";
 
 // Variables
-import { DEFAULT_MAP_CONFIG } from "./constants/gameConfig";
+import { DEFAULT_MAP_CONFIG } from "../gameConfig";
 import { DEFAULT_KEY_BINDINGS } from "./constants/playerControlsConfig";
 
 // Hooks
@@ -30,11 +33,10 @@ import QuitConfirmDialog from "./gameScreens/dialogs/QuitConfirmDialog";
 import Modal from "./components/Modal";
 
 const App = () => {
-	// Level chaining state
-	const [adventureLength, setAdventureLength] = useState(2); // default to extra short for testing
-	const [runData, setRunData] = useState(null); // { environment, adventureLength, currentLevel }
-	// Quit confirmation modal state
-	const [quitConfirmOpen, setQuitConfirmOpen] = useState(false);
+	// Level chaining config (adventure length selection stored outside reducer until confirmed start)
+	const [adventureLength, setAdventureLength] = useState(2);
+	// App state machine
+	const { state, actions, isFinalLevel } = useAppStateMachine();
 	//--- STATE ---//
 	const [openMap, setOpenMap] = useState(false);
 	const [environment, setEnvironment] = useState(
@@ -45,11 +47,12 @@ const App = () => {
 	let content;
 	const [canvas, setCanvasState] = useState(null);
 
-	// Modal state
-	const [gameMenuOpen, setGameMenuOpen] = useState(false);
-	const [optionsOpen, setOptionsOpen] = useState(false);
-	const [showDelveModal, setShowDelveModal] = useState(false);
-	const [wasOnExit, setWasOnExit] = useState(false);
+	// Local derived UI flags from state machine
+	const activeModal = state.ui.activeModal; // 'pause' | 'options' | 'quit' | 'delve' | null
+	const pausedAtRef = useRef(null);
+
+	// Obtain global game state early (needed by handlers below)
+	const { gameState, setGameState } = useGameStatus();
 
 	//--- FUNCTIONS ---//
 	const render = () => {
@@ -61,49 +64,29 @@ const App = () => {
 	const toggleMap = () => setOpenMap((open) => !open);
 
 	const handleToggleGameMenu = () => {
-		setGameMenuOpen(true);
-		setGameState(GAME_STATES.PAUSED);
-		// Unlock pointer
-		document.exitPointerLock?.();
-		console.log(
-			"[PAUSE TEST] Game paused, menu opened. gameMenuOpen:",
-			gameMenuOpen,
-			"gameState:",
-			gameState
-		);
+		if (gameState === GAME_STATES.PLAYING) {
+			setGameState(GAME_STATES.PAUSED);
+			actions.setActiveModal("pause");
+			pausedAtRef.current = Date.now();
+			document.exitPointerLock?.();
+		}
 	};
 
-	const handleContinue = () => {
-		setGameMenuOpen(false);
+	const handleContinue = useCallback(() => {
+		actions.setActiveModal(null);
 		setGameState(GAME_STATES.PLAYING);
-		// Relock pointer (try again if canvas not set yet)
 		setTimeout(() => {
-			if (canvas && canvas.requestPointerLock) {
-				canvas.requestPointerLock();
-			}
-			// Remove blur from canvas
-			if (canvas) {
-				canvas.classList.remove("blurred");
-			}
+			if (canvas && canvas.requestPointerLock) canvas.requestPointerLock();
+			canvas?.classList.remove("blurred");
 		}, 0);
-		console.log("[PAUSE TEST] Game resumed, menu closed.");
-	};
+	}, [actions, canvas, setGameState]);
 
-	const handleOptions = () => {
-		setOptionsOpen(true);
-	};
-
-	const handleCloseOptions = () => {
-		setOptionsOpen(false);
-	};
+	const handleOptions = () => actions.setActiveModal("options");
+	const handleCloseOptions = () => actions.setActiveModal(null);
 
 	//--- HOOKS ---//
-	const { gameState, setGameState } = useGameStatus();
 	const { map, spawn, exit, loading, error, loadNextLevel } = useGameController(
-		{
-			environment: runData?.environment || environment,
-			regenKey,
-		}
+		{ environment: state.run.environment || environment, regenKey }
 	);
 	// const { options, setOption } = useOptionsController();
 	const { player, updateGameState, setCanvas } = useGameState(
@@ -122,66 +105,59 @@ const App = () => {
 		render(); // Always render, even if paused
 	}, render);
 
-	// Open modal when pointer lock is lost during gameplay
+	// Removed auto-pause on pointer lock loss (pause now only via ESC/menu button)
+
+	// Allow pressing P while paused to resume (since movement listeners detach in pause)
 	useEffect(() => {
-		if (gameState !== GAME_STATES.PLAYING) return;
-		const handlePointerLockChange = () => {
-			const isLocked = document.pointerLockElement !== null;
-			if (!isLocked && !gameMenuOpen) {
-				setGameMenuOpen(true);
+		if (gameState !== GAME_STATES.PAUSED) return;
+		const handleKey = (e) => {
+			if (e.key.toLowerCase() === DEFAULT_KEY_BINDINGS.pause) {
+				if (e.repeat) return;
+				// Cooldown to avoid immediate unpause from same physical press
+				const sincePause = pausedAtRef.current
+					? Date.now() - pausedAtRef.current
+					: Infinity;
+				if (state.ui.activeModal === "pause" && sincePause > 150) {
+					e.preventDefault();
+					handleContinue();
+				}
 			}
 		};
-		document.addEventListener("pointerlockchange", handlePointerLockChange);
-		return () => {
-			document.removeEventListener(
-				"pointerlockchange",
-				handlePointerLockChange
-			);
-		};
-	}, [gameState, gameMenuOpen]);
+		window.addEventListener("keydown", handleKey);
+		return () => window.removeEventListener("keydown", handleKey);
+	}, [gameState, state.ui.activeModal, handleContinue]);
 
-	// Call loadNextLevel when entering LOADING state
-	useEffect(() => {
-		if (gameState === GAME_STATES.LOADING) {
-			// If starting a new run, initialize runData
-			if (!runData) {
-				setRunData({
-					environment,
-					adventureLength,
-					currentLevel: 1,
-				});
-			} else {
-				loadNextLevel();
-			}
-		}
-	}, [gameState, loadNextLevel, runData, environment, adventureLength]);
+	// Loading transition + run start/level advance
+	useLoadingTransition({
+		gameState,
+		setGameState,
+		GAME_STATES,
+		environmentSelection: environment,
+		adventureLength,
+		loadNextLevel,
+		loading,
+		map,
+		spawn,
+		exit,
+		error,
+		canvas,
+		state,
+		actions,
+		minDuration: 2000,
+	});
 
-	// Level chaining: when player reaches exit, show Delve Deeper modal
-	useEffect(() => {
-		// Only run chaining logic if runData is set and we're in PLAYING state
-		if (!runData || gameState !== GAME_STATES.PLAYING) return;
-
-		if (!player || !exit) return;
-
-		const TILE_SIZE = 64; // Adjust if your game uses a different tile size
-		const playerTileX = Math.floor(player.x / TILE_SIZE);
-		const playerTileY = Math.floor(player.y / TILE_SIZE);
-		const exitX = Array.isArray(exit) ? exit[0] : exit.x;
-		const exitY = Array.isArray(exit) ? exit[1] : exit.y;
-
-		const isOnExit = playerTileX === exitX && playerTileY === exitY;
-
-		if (isOnExit && !wasOnExit) {
-			console.log(
-				"[DELVE DEBUG] Player stepped on exit tile. Showing Delve Deeper modal."
-			);
-			setShowDelveModal(true);
-			setWasOnExit(true);
-			document.exitPointerLock?.(); // Unlock pointer when modal fires
-		} else if (!isOnExit && wasOnExit) {
-			setWasOnExit(false);
-		}
-	}, [player, exit, runData, gameState, wasOnExit]);
+	// Exit detection & optional delve modal
+	useExitDetection({
+		player,
+		exit,
+		gameState,
+		GAME_STATES,
+		setGameState,
+		state,
+		actions,
+		autoOpenDelve: true,
+		debug: false,
+	});
 
 	// Transition from LOADING to PLAYING when map, spawn, and exit are valid and not loading
 	useEffect(() => {
@@ -289,38 +265,43 @@ const App = () => {
 						showFps={showFps}
 						fps={fps}
 						onToggleGameMenu={handleToggleGameMenu}
-						runData={runData}
+						runData={
+							state.run.level && state.run.environment
+								? {
+										environment: state.run.environment,
+										currentLevel: state.run.level,
+										adventureLength,
+								  }
+								: null
+						}
 					/>
 					{/* Delve Deeper Modal */}
-		{showDelveModal && (
-		  <Modal open={true} onClose={() => setShowDelveModal(false)}>
-			<DelveDeeperDialog
-			  isFinalLevel={runData && runData.currentLevel === runData.adventureLength}
-			  onYes={() => {
-				setShowDelveModal(false);
-				if (runData.currentLevel < runData.adventureLength) {
-				  setRunData({
-					...runData,
-					currentLevel: runData.currentLevel + 1,
-				  });
-				  setGameState(GAME_STATES.LOADING);
-				} else {
-				  setGameState(GAME_STATES.WIN);
-				}
-			  }}
-			  onNo={() => setShowDelveModal(false)}
-			/>
-		  </Modal>
-		)}
-					{/* Overlay Modal only if paused */}
-					{gameState === GAME_STATES.PAUSED && !quitConfirmOpen && (
+					{activeModal === "delve" && (
+						<Modal open={true} onClose={() => actions.setActiveModal(null)}>
+							<DelveDeeperDialog
+								isFinalLevel={isFinalLevel}
+								onYes={() => {
+									if (!isFinalLevel) {
+										actions.setActiveModal(null);
+										actions.advanceLevel();
+										setGameState(GAME_STATES.LOADING);
+									} else {
+										setGameState(GAME_STATES.WIN);
+									}
+								}}
+								onNo={() => actions.setActiveModal(null)}
+							/>
+						</Modal>
+					)}
+					{/* Pause Modal */}
+					{gameState === GAME_STATES.PAUSED && activeModal === "pause" && (
 						<Modal open={true} onClose={handleContinue}>
 							<h2>Game Paused</h2>
 							<div
 								style={{
 									display: "flex",
 									flexDirection: "column",
-									gap: "16px",
+									gap: 16,
 									alignItems: "stretch",
 									marginTop: 24,
 								}}
@@ -333,30 +314,28 @@ const App = () => {
 								</button>
 								<button
 									className="screen-button"
-									onClick={() => setQuitConfirmOpen(true)}
+									onClick={() => actions.setActiveModal("quit")}
 								>
 									Quit
 								</button>
 							</div>
 						</Modal>
 					)}
-					{/* Quit confirmation modal */}
-					{gameState === GAME_STATES.PAUSED && quitConfirmOpen && (
-						<Modal open={true} onClose={() => setQuitConfirmOpen(false)}>
+					{/* Quit confirmation */}
+					{gameState === GAME_STATES.PAUSED && activeModal === "quit" && (
+						<Modal open={true} onClose={() => actions.setActiveModal("pause")}>
 							<QuitConfirmDialog
 								onConfirm={() => {
-									setQuitConfirmOpen(false);
-									setGameMenuOpen(false);
-									setOptionsOpen(false);
+									actions.setActiveModal(null);
 									setGameState(GAME_STATES.MAIN_MENU);
 								}}
-								onCancel={() => setQuitConfirmOpen(false)}
+								onCancel={() => actions.setActiveModal("pause")}
 							/>
 						</Modal>
 					)}
-					{/* Options modal (can be open in both states) */}
-					{optionsOpen && (
-						<Modal open={optionsOpen} onClose={handleCloseOptions}>
+					{/* Options modal */}
+					{activeModal === "options" && (
+						<Modal open={true} onClose={handleCloseOptions}>
 							<OptionsDialog onClose={handleCloseOptions} />
 						</Modal>
 					)}
@@ -367,14 +346,14 @@ const App = () => {
 			content = (
 				<GameOverScreen
 					result="win"
-					setGameState={(state) => {
-						if (state === GAME_STATES.RUN_SETTINGS) {
-							// Reset run state and go to run selection
-							setRunData(null);
+					setGameState={(next) => {
+						if (next === GAME_STATES.RUN_SETTINGS) {
+							// Reset run configuration for a new selection
 							setAdventureLength(3);
 							setEnvironment(DEFAULT_MAP_CONFIG.environment);
+							actions.resetRun();
 						}
-						setGameState(state);
+						setGameState(next);
 					}}
 				/>
 			);

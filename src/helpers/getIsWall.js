@@ -1,4 +1,4 @@
-import { TILE_SIZE } from "../constants/gameConfig";
+import { TILE_SIZE } from "../../gameConfig";
 
 /**
  * Checks whether a given pixel coordinate (x, y) is inside a wall tile.
@@ -12,17 +12,17 @@ import { TILE_SIZE } from "../constants/gameConfig";
  * @returns {boolean} True if the coordinate is inside a wall or out of bounds.
  */
 export const getIsWall = (x, y, map) => {
-  // Convert world-space pixel coordinates to tile indices
-  const tileX = Math.floor(x / TILE_SIZE);
-  const tileY = Math.floor(y / TILE_SIZE);
+	// Convert world-space pixel coordinates to tile indices
+	const tileX = Math.floor(x / TILE_SIZE);
+	const tileY = Math.floor(y / TILE_SIZE);
 
-  // Bounds check: if you're outside the map, treat it as a solid wall
-  if (tileY < 0 || tileY >= map.length || tileX < 0 || tileX >= map[0].length) {
-    return true;
-  }
+	// Bounds check: if you're outside the map, treat it as a solid wall
+	if (tileY < 0 || tileY >= map.length || tileX < 0 || tileX >= map[0].length) {
+		return true;
+	}
 
-  // Check the tile value: 1 = wall, 0 = floor
-  return map[tileY][tileX] === 1;
+	// Check the tile value: 1 = wall, 0 = floor
+	return map[tileY][tileX] === 1;
 };
 
 /*

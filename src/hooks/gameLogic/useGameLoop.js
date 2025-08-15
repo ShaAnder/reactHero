@@ -1,6 +1,6 @@
 // I use this hook to run my game loop at a steady pace, using requestAnimationFrame.
 import { useRef, useState, useEffect, useCallback } from "react";
-import { FRAME_DURATION } from "../../constants/gameConfig";
+import { FRAME_DURATION } from "../../../gameConfig";
 
 /**
  * useGameLoop

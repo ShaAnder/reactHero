@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { generateMap } from "../../engine/generation/map/createDungeon";
-import { DEFAULT_MAP_CONFIG } from "../../constants/gameConfig";
+import { DEFAULT_MAP_CONFIG } from "../../../gameConfig";
 
 /**
  * Game controller hook that manages:

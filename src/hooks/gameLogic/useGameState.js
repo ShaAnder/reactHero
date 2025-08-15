@@ -5,7 +5,7 @@ import {
 	PLAYER_ROTATION_SPEED,
 } from "../../constants/playerConfig";
 import { getIsWall } from "../../helpers/getIsWall";
-import { FOV_ANGLE, TILE_SIZE } from "../../constants/gameConfig";
+import { FOV_ANGLE, TILE_SIZE } from "../../../gameConfig";
 import { getCameraPlane } from "../../helpers/getCameraPlane";
 import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
 

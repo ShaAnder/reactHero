@@ -5,7 +5,7 @@ import { renderMinimap } from "./rendering/miniMapRenderer";
 import { rayCaster } from "./rendering/raycaster";
 
 // Game constants (field of view, etc.)
-import { FOV_ANGLE } from "../constants/gameConfig";
+import { FOV_ANGLE } from "../../gameConfig";
 
 // Utility to calculate the camera plane based on player angle and FOV
 import { getCameraPlane } from "../helpers/getCameraPlane";

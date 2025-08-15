@@ -1,6 +1,6 @@
 import { generateForest } from "./forest/forestMap";
 import { generateCavern } from "./cavern/cavernMap";
-import { DEFAULT_MAP_CONFIG } from "../../../constants/gameConfig";
+import { DEFAULT_MAP_CONFIG } from "../../../../gameConfig";
 
 /**
  * Main map generator controller.
@@ -10,16 +10,16 @@ import { DEFAULT_MAP_CONFIG } from "../../../constants/gameConfig";
  * @returns {{ map: number[][], start: [number, number], exit: [number, number] }}
  */
 export const generateMap = async (options = DEFAULT_MAP_CONFIG) => {
-  const environment = options.environment || "forest";
+	const environment = options.environment || "forest";
 
-  // swtich setup with our enviornments, whatever user selects will be our randomly generated tileset
-  switch (environment) {
-    case "forest":
-    default:
-      return generateForest(options);
-    case "cavern":
-      return generateCavern(options);
-  }
+	// swtich setup with our enviornments, whatever user selects will be our randomly generated tileset
+	switch (environment) {
+		case "forest":
+		default:
+			return generateForest(options);
+		case "cavern":
+			return generateCavern(options);
+	}
 };
 
 /*

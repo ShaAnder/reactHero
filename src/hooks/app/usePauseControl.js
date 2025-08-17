@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from "react";
+import { ModalIds } from "../../constants/modalIds";
 
 // Consolidated pause system: handles state swap, modal activation, pointer
 // lock release / reacquire, and a small key cooldown so a single key press
@@ -32,7 +33,7 @@ export function usePauseControl({
 	const pause = useCallback(() => {
 		if (gameState !== GAME_STATES.PLAYING) return;
 		setGameState(GAME_STATES.PAUSED);
-		actions.setActiveModal("pause");
+		actions.setActiveModal(ModalIds.PAUSE);
 		pausedAtRef.current = Date.now();
 		document.exitPointerLock?.();
 	}, [

@@ -28,6 +28,7 @@ We cap attempts to avoid infinite loops. Detailed console warnings help tune
 parameters when generation is too strict.
 */
 export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
+	// COORDINATE POLICY: Returns start/exit as [x,y]. Internal helpers may use [y,x]; convert at boundaries.
 	const dimensions = options.dimensions;
 	const fillProbability = options.fillProbability || 0.45;
 	const iterations = options.caIterations || 5;

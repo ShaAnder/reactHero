@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { MOUSE_SENSITIVITY } from "../../constants/playerConfig";
+import { ModalIds } from "../../constants/modalIds";
 // DEFAULT_KEY_BINDINGS import retained elsewhere; can remove if unused.
 
 /**

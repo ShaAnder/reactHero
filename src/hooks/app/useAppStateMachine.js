@@ -28,6 +28,7 @@ const initialState = {
 		seed: null, // deterministic seed for reproducible map sequence
 		mapRevision: 0, // bump to reroll current level without advancing
 		startedAt: null, // timestamp (ms) when run actually began
+		finishedAt: null, // timestamp when run ended (win/abort)
 	},
 	ui: {
 		// 'pause' | 'options' | 'quit' | 'delve' | null
@@ -68,13 +69,17 @@ function appStateMachineReducer(state, action) {
 		case "ABORT_RUN":
 			return {
 				...state,
-				run: { ...state.run, status: RUN_STATUS.ABORTED },
+				run: {
+					...state.run,
+					status: RUN_STATUS.ABORTED,
+					finishedAt: Date.now(),
+				},
 				meta: { ...state.meta, lastAction: action.type },
 			};
 		case "WIN_RUN":
 			return {
 				...state,
-				run: { ...state.run, status: RUN_STATUS.WON },
+				run: { ...state.run, status: RUN_STATUS.WON, finishedAt: Date.now() },
 				meta: { ...state.meta, lastAction: action.type },
 			};
 		case "RESET_RUN":

@@ -30,6 +30,8 @@ Design goals:
 - Natural path layout via walkers instead of straight corridors.
 */
 export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
+	// COORDINATE POLICY: This generator returns start/exit in [x,y] order.
+	// Internally some utilities (e.g., getFurthestFloor) expect [y,x]; we adapt at call boundaries.
 	const dimensions = options.dimensions || 65;
 	const numClearings = options.numRegions || 10;
 	const clearingSize = [
@@ -138,6 +140,7 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 			initRandomWalker(map, roomCenters, walkerPresets);
 
 			// Exit selection: furthest reachable floor from spawn
+			// getFurthestFloor expects [y,x] so supply swapped, then adapt back
 			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
 			if (!rawExit) throw new Error("Failed to find exit tile");
 			exit = [rawExit[1], rawExit[0]];

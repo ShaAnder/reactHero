@@ -106,6 +106,12 @@ const GameScreen = ({
 					}}
 				>
 					{run.environment}: {run.level}
+					{/* If run finished we can show total time (rough) */}
+					{run.finishedAt && run.startedAt && (
+						<span style={{ marginLeft: 12, fontSize: "0.9rem", opacity: 0.8 }}>
+							Time: {Math.round((run.finishedAt - run.startedAt) / 1000)}s
+						</span>
+					)}
 				</div>
 			)}
 

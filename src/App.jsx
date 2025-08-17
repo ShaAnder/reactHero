@@ -23,6 +23,7 @@ import { usePauseControl } from "./hooks/app/usePauseControl";
 import { useCanvasBlur } from "./hooks/app/useCanvasBlur";
 import { useGameStatus, GAME_STATES } from "./hooks/gameLogic/useGameStatus";
 import { useGameController } from "./hooks/gameLogic/useGameController";
+import { ModalIds } from "./constants/modalIds"; // Normalized modal IDs
 // import useOptionsController from "./hooks/gameLogic/useOptionsController";
 
 // Engine
@@ -79,15 +80,15 @@ const App = () => {
 	const handleToggleGameMenu = () => pause();
 	const handleContinue = useCallback(() => resume(), [resume]);
 
-	const handleOptions = () => actions.setActiveModal("options");
+	const handleOptions = () => actions.setActiveModal(ModalIds.OPTIONS);
 	const handleCloseOptions = () => actions.setActiveModal(null);
 
 	//--- HOOKS ---//
-	const { map, spawn, exit, loading, error, loadNextLevel } = useGameController(
-		{
+	const { map, spawn, exit, loading, error, loadNextLevel, world } =
+		useGameController({
 			environment: state.run.environment || DEFAULT_MAP_CONFIG.environment,
-		}
-	);
+			level: state.run.level, // fed into world bundle
+		});
 
 	// Input + player split
 	const [internalCanvas, setCanvas] = useState(null);
@@ -158,9 +159,10 @@ const App = () => {
 	}, [state.run.mapRevision, state.run.status, setGameState]); // GAME_STATES.LOADING is static enum
 
 	// Exit detection & optional delve modal
+	// Exit detection now could consume world.exit; keep both until full migration
 	useExitDetection({
 		player,
-		exit,
+		exit: world.exit,
 		gameState,
 		GAME_STATES,
 		setGameState,
@@ -232,7 +234,7 @@ const App = () => {
 						run={state.run}
 					/>
 					<DelveModal
-						open={activeModal === "delve"}
+						open={activeModal === ModalIds.DELVE}
 						isFinalLevel={isFinalLevel}
 						onYes={() => {
 							if (!isFinalLevel) {
@@ -246,21 +248,25 @@ const App = () => {
 						onNo={() => actions.setActiveModal(null)}
 					/>
 					<PauseMenu
-						open={gameState === GAME_STATES.PAUSED && activeModal === "pause"}
+						open={
+							gameState === GAME_STATES.PAUSED && activeModal === ModalIds.PAUSE
+						}
 						onContinue={handleContinue}
 						onOptions={handleOptions}
-						onQuit={() => actions.setActiveModal("quit")}
+						onQuit={() => actions.setActiveModal(ModalIds.QUIT)}
 					/>
 					<QuitModal
-						open={gameState === GAME_STATES.PAUSED && activeModal === "quit"}
+						open={
+							gameState === GAME_STATES.PAUSED && activeModal === ModalIds.QUIT
+						}
 						onConfirm={() => {
 							actions.setActiveModal(null);
 							setGameState(GAME_STATES.MAIN_MENU);
 						}}
-						onCancel={() => actions.setActiveModal("pause")}
+						onCancel={() => actions.setActiveModal(ModalIds.PAUSE)}
 					/>
 					<OptionsModal
-						open={activeModal === "options"}
+						open={activeModal === ModalIds.OPTIONS}
 						onClose={handleCloseOptions}
 					/>
 				</>

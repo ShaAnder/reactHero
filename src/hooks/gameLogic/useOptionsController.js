@@ -4,12 +4,12 @@ import { DEFAULT_MAP_CONFIG } from "../../constants/gameConfig";
 export const DEFAULT_OPTIONS = {
 	environment: DEFAULT_MAP_CONFIG.environment, // Default environment selection
 	mapSize: 64, // Default map dimensions (square)
-	levelCount: 5, // Default run length (medium)
+	length: 5, // Normalized total run floors (was levelCount)
 };
 
 /**
  * Lightweight options store for menus.
- * Keeps environment / size / level count in a single object so you can pass
+ * Keeps environment / size / length in a single object so you can pass
  * it wholesale into a run start action without juggling separate props.
  */
 

@@ -1,4 +1,7 @@
 import { useEffect, useRef } from "react";
+import { TILE_SIZE } from "../../../gameConfig";
+import { worldToTile, sameTile } from "../../helpers/tiles";
+import { ModalIds } from "../../constants/modalIds";
 
 // Watches player tile vs exit tile. When you step on the exit it either:
 // - Wins the run (final level)
@@ -23,13 +26,10 @@ export function useExitDetection({
 			/* effect tick diagnostic removed for production cleanliness */
 		}
 
-		// TODO: lift to shared constant
-		const TILE_SIZE = 64;
-		const playerTileX = Math.floor(player.x / TILE_SIZE);
-		const playerTileY = Math.floor(player.y / TILE_SIZE);
+		const [playerTileX, playerTileY] = worldToTile(player.x, player.y);
 		const exitX = Array.isArray(exit) ? exit[0] : exit.x;
 		const exitY = Array.isArray(exit) ? exit[1] : exit.y;
-		const isOnExit = playerTileX === exitX && playerTileY === exitY;
+		const isOnExit = sameTile([playerTileX, playerTileY], [exitX, exitY]);
 
 		if (isOnExit && !wasOnExitRef.current) {
 			wasOnExitRef.current = true;
@@ -60,7 +60,7 @@ export function useExitDetection({
 				if (debug) {
 					/* opening delve modal */
 				}
-				actions.setActiveModal("delve");
+				actions.setActiveModal(ModalIds.DELVE);
 				document.exitPointerLock?.();
 			}
 		} else if (!isOnExit && wasOnExitRef.current) {
@@ -69,7 +69,7 @@ export function useExitDetection({
 				/* stepping OFF exit */
 			}
 			actions.playerLeftExit();
-			if (state.ui.activeModal === "delve") {
+			if (state.ui.activeModal === ModalIds.DELVE) {
 				if (debug) {
 					/* closing delve on leave */
 				}

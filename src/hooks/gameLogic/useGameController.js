@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { generateMap } from "../../engine/generation/map/createDungeon";
 import { DEFAULT_MAP_CONFIG } from "../../../gameConfig";
 /**
@@ -16,7 +16,7 @@ import { DEFAULT_MAP_CONFIG } from "../../../gameConfig";
  *
  * Handles level loading and transitions.
  */
-export const useGameController = ({ environment }) => {
+export const useGameController = ({ environment, level }) => {
 	const [map, setMap] = useState(null);
 	const [spawn, setSpawn] = useState(null);
 	const [exit, setExit] = useState(null);
@@ -33,9 +33,7 @@ export const useGameController = ({ environment }) => {
 		setExit(null);
 		try {
 			await new Promise((resolve) => setTimeout(resolve, 500));
-			const preset =
-				DEFAULT_MAP_CONFIG.environmentPresets[environment] ||
-				DEFAULT_MAP_CONFIG.environmentPresets["dungeon"];
+			const preset = DEFAULT_MAP_CONFIG.environmentPresets[environment];
 
 			const config = {
 				...DEFAULT_MAP_CONFIG,
@@ -63,6 +61,12 @@ export const useGameController = ({ environment }) => {
 	// NOTE: No automatic map generation on mount. Call loadNextLevel() from your app logic when needed.
 
 	// Return all game state and the function to load the next level
+	// World object (normalized bundle) – consumers can migrate to this gradually
+	const world = useMemo(
+		() => ({ map, spawn, exit, level }),
+		[map, spawn, exit, level]
+	);
+
 	return {
 		map,
 		spawn,
@@ -70,6 +74,7 @@ export const useGameController = ({ environment }) => {
 		loading,
 		error,
 		loadNextLevel,
+		world,
 	};
 };
 

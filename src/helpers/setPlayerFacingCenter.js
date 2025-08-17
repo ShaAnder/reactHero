@@ -8,45 +8,23 @@
  * @returns {number} radians (0→right, π/2→down, π→left, -π/2→up)
  */
 export const setPlayerFacingInward = (spawn, map) => {
-	if (!spawn || !map) return;
+	if (!spawn || !map) return 0;
 	const spawnY = spawn[0];
 	const spawnX = spawn[1];
-	const maxY = map.length - 1;
-	const maxX = map[0].length - 1;
-
-	// Top edge
-	if (spawnY === 0) return Math.PI / 2; // Down
-	// Bottom edge
-	if (spawnY === maxY) return -Math.PI / 2; // Up
-	// Left edge
-	if (spawnX === 0) return 0; // Right
-	// Right edge
-	if (spawnX === maxX) return Math.PI; // Left
-
-	// Corners (optional: you can refine this if you want diagonal facing)
-	// Top-left
-	if (spawnY === 0 && spawnX === 0) return Math.PI / 4; // Down-right
-	// Top-right
-	if (spawnY === 0 && spawnX === maxX) return (3 * Math.PI) / 4; // Down-left
-	// Bottom-left
-	if (spawnY === maxY && spawnX === 0) return -Math.PI / 4; // Up-right
-	// Bottom-right
-	if (spawnY === maxY && spawnX === maxX) return (-3 * Math.PI) / 4; // Up-left
-
-	// Default interior orientation
-	return 0;
+	const centerY = (map.length - 1) / 2;
+	const centerX = (map[0].length - 1) / 2;
+	// Vector from spawn to map center
+	const dy = centerY - spawnY;
+	const dx = centerX - spawnX;
+	// atan2 expects (y,x) → returns angle where 0 = right, PI/2 = down (canvas convention)
+	return Math.atan2(dy, dx);
 };
 /*
 HOW THIS FILE WORKS
 
-Simple boundary tests decide orientation:
-- Top row → face downward into map.
-- Bottom row → face upward.
-- Left edge → face right.
-- Right edge → face left.
-- Corners get diagonal bias toward center (rough heuristic).
-
-Limitations
-- Diagonal angles may not perfectly aim at true geometric center; could
-  compute vector to map midpoint for refinement later.
+Compute vector from spawn tile to geometric center and face along it. Gives a
+natural inward look for any spawn position (edges, corners, interior) without
+branch logic. Previous heuristic (edge/corner switch) replaced for simplicity.
+Limitations: if center is a wall later we might want to bias toward largest
+open region; for now geometric center is adequate.
 */

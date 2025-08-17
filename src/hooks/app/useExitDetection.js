@@ -92,3 +92,24 @@ export function useExitDetection({
 		debug,
 	]);
 }
+
+/*
+HOW THIS HOOK WORKS
+
+Polls (via effect) whether the player occupies the exit tile while in PLAYING.
+
+When stepping ON:
+- Dispatches playerSteppedOnExit (analytics / future triggers).
+- If final level → dispatch win + flip global game state to WIN.
+- Else optionally opens a "delve" modal (controlled by autoOpenDelve flag) and releases pointer lock so user can interact.
+
+When stepping OFF:
+- Dispatches playerLeftExit.
+- Closes delve modal if it was open.
+
+State derivation relies on run.level & run.length to detect final floor.
+
+Extending
+- Could add timing (how long standing on exit) or hold‑to‑activate behavior.
+- Replace tile comparisons with an ID if exit becomes an entity.
+*/

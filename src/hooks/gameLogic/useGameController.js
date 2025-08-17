@@ -1,6 +1,11 @@
 import { useState, useCallback } from "react";
 import { generateMap } from "../../engine/generation/map/createDungeon";
 import { DEFAULT_MAP_CONFIG } from "../../../gameConfig";
+/**
+ * useGameController
+ * Manages map + spawn + exit generation workflow and exposes loadNextLevel.
+ * Stateless about run seeds/level numbers (handled by higher-level state machine).
+ */
 
 /**
  * Game controller hook that manages:
@@ -69,12 +74,21 @@ export const useGameController = ({ environment }) => {
 };
 
 /*
-How this file works:
+HOW THIS FILE WORKS
 
-This React hook manages the core state for a dungeon-crawling game. It tracks the current level, the generated map, the player spawn and exit positions, and whether the game is currently loading. When called, loadNextLevel generates a new dungeon map (with spawn and exit) and increments the level. The hook automatically loads the first level on mount, and exposes all state along with the loadNextLevel function so you can trigger a new level from your UI or game logic.
+Orchestrates procedural level fetch: wraps map/spawn/exit and a loading flag.
 
-Typical usage:
-- Call useGameController() in your main game component.
-- Use the returned state and methods to render the map, player, and handle level transitions.
+Flow of loadNextLevel:
+1. Clear prior map/spawn/exit + set loading.
+2. Merge DEFAULT_MAP_CONFIG with environment preset.
+3. Call generateMap(config) which returns { map, start, exit }.
+4. Publish results + flip loading false.
 
+Why stateless about level numbers / seeds?
+- Keeps pure responsibility: just “give me a fresh playable space”. Higher
+	layers decide when / why (reroll, next depth, seed replay).
+
+Extending
+- Thread a seed param and replace Math.random usages inside generators.
+- Return additional derived data (visibility graph, nav mesh) alongside map.
 */

@@ -80,3 +80,17 @@ export function usePauseControl({
 
 	return { pause, resume };
 }
+
+/*
+HOW THIS HOOK WORKS (EXTRA NOTES)
+
+pause(): idempotent if not in PLAYING. Sets modal + timestamp + releases pointer lock.
+resume(): idempotent if not in PAUSED. Clears modal + relocks pointer next tick.
+
+Why cooldown?
+Avoids single keyDown + keyUp sequence (with repeat) causing both pause and resume.
+
+Extending
+- Add a stack if multiple systems can pause (cinematics, focus loss).
+- Broadcast events for audio fade in/out hooks.
+*/

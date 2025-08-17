@@ -2,7 +2,7 @@
  * Calculates the sideways (perpendicular) vector that defines how wide the
  * player can see – the “camera plane”. Rays will fan out along this plane.
  *
- * Plain language version:
+ * Thinkof it like this:
  * Picture the player looking forward. Now rotate that forward arrow 90° to
  * get a sideways arrow. Scale that sideways arrow so that when we sweep from
  * the far left of the screen to the far right we cover the intended field of

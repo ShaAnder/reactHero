@@ -2,45 +2,46 @@ import { useState } from "react";
 import { DEFAULT_MAP_CONFIG } from "../../constants/gameConfig";
 
 export const DEFAULT_OPTIONS = {
-	environment: DEFAULT_MAP_CONFIG.environment, // Our default Environment
-	mapSize: 64, // Default map size
-	levelCount: 5, // Default Levels (Medium Run)
+	environment: DEFAULT_MAP_CONFIG.environment, // Default environment selection
+	mapSize: 64, // Default map dimensions (square)
+	levelCount: 5, // Default run length (medium)
 };
 
 /**
- * useOptionsController
- *
- * Custom React hook to manage all user-configurable game options.
- * - Stores options in local state
- * - Provides functions to update a single option or reset all to defaults
- * - Can be used in menus, options screens, or passed to game logic
+ * Lightweight options store for menus.
+ * Keeps environment / size / level count in a single object so you can pass
+ * it wholesale into a run start action without juggling separate props.
  */
 
 export default function useOptionsController(initialOptions = DEFAULT_OPTIONS) {
 	const [options, setOptions] = useState(initialOptions);
 
 	const setOption = (key, value) => {
-		setOptions((prevOptions) => ({
-			...prevOptions,
-			[key]: value,
-		}));
+		setOptions((prev) => ({ ...prev, [key]: value }));
 	};
 
 	const resetOptions = () => {
 		setOptions(DEFAULT_OPTIONS);
 	};
 
-	return {
-		options,
-		setOption,
-		resetOptions,
-	};
+	return { options, setOption, resetOptions };
 }
 
 /*
-How this file works:
+	HOW THIS FILE WORKS
 
-This hook centralizes all game options (environment, map size, level count, etc.) in a single state object.
-It provides easy functions to update individual options or reset everything to defaults, making it simple to manage user settings from menus or options screens.
-Use this hook at the top level of your app and pass the options to your game logic when starting a run.
-*/
+	Central tiny state container for configurable run options.
+
+	Why keep them grouped?
+	- Easier to persist / reset.
+	- Pass a single object when starting a run.
+	- Future additions (difficulty, seed entry) slot in without prop churn.
+
+	API
+	options: current options object
+	setOption(k,v): mutate one field
+	resetOptions(): revert to defaults constant
+
+	Extending
+	Add new defaults in DEFAULT_OPTIONS and surface matching UI controls.
+	*/

@@ -1,4 +1,9 @@
 import { useReducer } from "react";
+/**
+ * useAppStateMachine
+ * Central reducer-powered state: run (config/progress), ui (modals), exit (player on exit tile), meta (timing + lastAction).
+ * Provides semantic action creators and derived flags (isRunActive, isFinalLevel).
+ */
 
 // Run lifecycle statuses (kept small & explicit for clarity)
 export const RUN_STATUS = {

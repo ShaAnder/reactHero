@@ -83,7 +83,20 @@ export const useGameLoop = (updateCallback, renderCallback) => {
 };
 
 /*
-How this file works:
+HOW THIS FILE WORKS
 
-This is my main game loop. I use it to keep the game running smoothly, updating the logic and drawing the screen at a steady pace. I also track the FPS so I can see how well the game is performing. I use requestAnimationFrame for smooth animation, and I make sure to clean up when the component unmounts.
+Fixed‑timestep simulation layered atop variable‑timestep rendering.
+
+Mechanics
+- accumulatorRef collects real time until >= FRAME_DURATION then runs exactly
+	one update slice (deltaTime constant in seconds) for determinism.
+- renderCallback invoked after each simulation slice (can diverge later).
+- FPS counted by updates and published every ~1000ms.
+
+Why cap accumulator?
+- Prevents huge catch‑up spirals if tab was backgrounded (spiral of death).
+
+Extending
+- Add interpolation factor: accumulatorRef.current / FRAME_DURATION for smooth lerp.
+- Separate logic vs render scheduling by moving render outside fixed step.
 */

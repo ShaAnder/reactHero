@@ -48,9 +48,20 @@ export const useGameStatus = (initialState = GAME_STATES.LANDING) => {
 };
 
 /*
-How this file works:
+HOW THIS FILE WORKS
 
-This hook centralizes the current game state (main menu, playing, paused, etc.) in a single state variable.
-It provides a setter to change the state and boolean flags for each possible state, making it easy to conditionally render screens or logic in your app.
-Use this at the top level of your app to control which screen is visible and to manage transitions between game states.
+Single useState drives which major screen / mode shows. We expose booleans so
+render code can stay very readable instead of lots of === checks.
+
+Why a hook instead of inline state in App?
+- Encapsulates the canonical list of states in one export (GAME_STATES).
+- Easy to replace with a reducer or state machine later without touching callers.
+
+API
+gameState: current token (string)
+setGameState(token): transition to a new state
+isX flags: ergonomic helpers for JSX conditions
+
+Extending
+Add new token to GAME_STATES and optionally add a matching isFlag convenience.
 */

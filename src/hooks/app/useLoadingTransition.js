@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { RUN_STATUS } from "./useAppStateMachine";
+/**
+ * useLoadingTransition
+ * Controls LOADING phase: kicks off initial run or subsequent level generation, enforces minimum display time,
+ * and transitions to PLAYING (attempting to restore pointer lock). Uses reducer meta timestamps for timing.
+ */
 
-// Handles: starting a run, advancing levels, enforcing minimum loading screen duration,
-// and transitioning to PLAYING while relocking pointer.
+// Handles: starting a run, advancing levels, minimum duration, pointer relock.
 export function useLoadingTransition({
 	gameState,
 	setGameState,
@@ -18,7 +22,7 @@ export function useLoadingTransition({
 	actions,
 	minDuration = 2000,
 }) {
-	// Kick off generation or next level when entering LOADING.
+	// Entering LOADING: start run (if idle) or load next level (if already running)
 	useEffect(() => {
 		if (gameState !== GAME_STATES.LOADING) return;
 
@@ -47,7 +51,7 @@ export function useLoadingTransition({
 		state.meta.loadingStartAt,
 	]);
 
-	// Transition from LOADING -> PLAYING after conditions + minimum duration.
+	// LOADING -> PLAYING once assets ready + minimum duration elapsed
 	useEffect(() => {
 		if (gameState !== GAME_STATES.LOADING) return;
 		if (loading || !map || !spawn || !exit || error) return;

@@ -1,6 +1,11 @@
 import SettingsScreen from "./gameScreens/SettingsScreen";
+/**
+ * App (root orchestrator)
+ * Wires: reducer (run/ui/meta) + game loop + map generation + input hooks + screen routing.
+ * Keeps small local UI flags (map, fps) outside reducer.
+ */
 // IMPORTS //
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAppStateMachine, RUN_STATUS } from "./hooks/app/useAppStateMachine";
 import { useLoadingTransition } from "./hooks/app/useLoadingTransition";
 import { useExitDetection } from "./hooks/app/useExitDetection";
@@ -127,9 +132,6 @@ const App = () => {
 		gameState,
 		setGameState,
 		GAME_STATES,
-		environmentSelection:
-			state.run.environment || DEFAULT_MAP_CONFIG.environment,
-		adventureLength: state.run.length || 2,
 		loadNextLevel,
 		loading,
 		map,
@@ -141,6 +143,19 @@ const App = () => {
 		actions,
 		minDuration: 2000,
 	});
+
+	// Reroll current level if mapRevision increments (trigger a reload cycle)
+	const lastMapRevisionRef = useRef(0);
+	useEffect(() => {
+		if (state.run.status !== RUN_STATUS.IN_PROGRESS) return;
+		if (
+			state.run.mapRevision != null &&
+			state.run.mapRevision !== lastMapRevisionRef.current
+		) {
+			lastMapRevisionRef.current = state.run.mapRevision;
+			setGameState(GAME_STATES.LOADING);
+		}
+	}, [state.run.mapRevision, state.run.status, setGameState]); // GAME_STATES.LOADING is static enum
 
 	// Exit detection & optional delve modal
 	useExitDetection({
@@ -171,14 +186,8 @@ const App = () => {
 					setGameState={setGameState}
 					environment={state.run.environment || DEFAULT_MAP_CONFIG.environment}
 					setEnvironment={(env) => actions.setRunEnvironment(env)}
-					adventureLength={state.run.length || 2}
-					setAdventureLength={(len) => actions.setRunLength(len)}
-					runLengthOptions={[
-						{ label: "Extra Short", value: 2 },
-						{ label: "Short", value: 3 },
-						{ label: "Medium", value: 5 },
-						{ label: "Long", value: 10 },
-					]}
+					length={state.run.length || 2}
+					setLength={(len) => actions.setRunLength(len)}
 				/>
 			);
 			break;
@@ -220,15 +229,7 @@ const App = () => {
 						showFps={showFps}
 						fps={fps}
 						onToggleGameMenu={handleToggleGameMenu}
-						runData={
-							state.run.level && state.run.environment
-								? {
-										environment: state.run.environment,
-										currentLevel: state.run.level,
-										adventureLength: state.run.length,
-								  }
-								: null
-						}
+						run={state.run}
 					/>
 					<DelveModal
 						open={activeModal === "delve"}

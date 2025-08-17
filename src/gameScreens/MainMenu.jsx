@@ -1,3 +1,7 @@
+/**
+ * MainMenu
+ * Entry screen: start new run, open settings, view highscores.
+ */
 const MainMenu = ({ setGameState }) => {
 	return (
 		<div className="screen-container">

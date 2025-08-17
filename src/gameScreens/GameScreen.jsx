@@ -1,4 +1,9 @@
 import React from "react";
+/**
+ * GameScreen
+ * Displays active run: canvas, HUD (environment/level), map overlay, FPS, and menu button.
+ * Stateless regarding progression; parent owns run/map/player state.
+ */
 import Canvas from "../components/canvas/Canvas";
 import Map from "../components/canvas/Map";
 import { usePlayerControls } from "../hooks/gameLogic/usePlayerControls";
@@ -14,23 +19,23 @@ const GameScreen = ({
 	showFps,
 	fps,
 	onToggleGameMenu,
-	runData,
+	run, // normalized run slice
 }) => {
-	// Use a ref object for compatibility with Canvas's forwardRef
+	// Canvas DOM ref (forwarded to renderer)
 	const canvasRef = React.useRef(null);
 	const [canvasDimensions, setCanvasDimensions] = React.useState({
 		width: window.innerWidth,
 		height: window.innerHeight,
 	});
 
-	// Attach the canvas DOM node to parent state on mount
+	// Provide canvas element upward when ready
 	React.useEffect(() => {
 		if (canvasRef.current) {
 			setCanvas(canvasRef.current);
 		}
 	}, [setCanvas]);
 
-	// Lock orientation to landscape on mobile
+	// Attempt to lock orientation (mobile UX)
 	React.useEffect(() => {
 		const lockOrientation = async () => {
 			try {
@@ -72,9 +77,10 @@ const GameScreen = ({
 		};
 	}, []);
 
+	// Hook: attach keyboard/mouse listeners controlling map + pause
 	usePlayerControls(
 		canvasRef.current,
-		() => {}, // setPlayer is handled elsewhere
+		() => {}, // setPlayer handled elsewhere
 		DEFAULT_KEY_BINDINGS,
 		toggleMap,
 		onToggleGameMenu
@@ -82,8 +88,8 @@ const GameScreen = ({
 
 	return (
 		<div className="game-screen" style={{ position: "relative" }}>
-			{/* Top right: environment and level */}
-			{runData && (
+			{/* HUD: environment + level */}
+			{run && run.environment && run.level && (
 				<div
 					style={{
 						position: "absolute",
@@ -99,7 +105,7 @@ const GameScreen = ({
 						fontWeight: 500,
 					}}
 				>
-					{runData.environment}: {runData.currentLevel}
+					{run.environment}: {run.level}
 				</div>
 			)}
 

@@ -19,6 +19,10 @@ const initialState = {
 		length: null,
 		level: null,
 		status: RUN_STATUS.IDLE,
+		// Added during state normalization
+		seed: null, // deterministic seed for reproducible map sequence
+		mapRevision: 0, // bump to reroll current level without advancing
+		startedAt: null, // timestamp (ms) when run actually began
 	},
 	ui: {
 		// 'pause' | 'options' | 'quit' | 'delve' | null
@@ -47,6 +51,9 @@ function appStateMachineReducer(state, action) {
 					length: action.length,
 					level: 1,
 					status: RUN_STATUS.IN_PROGRESS,
+					seed: action.seed ?? Math.floor(Math.random() * 1e9),
+					mapRevision: 0,
+					startedAt: Date.now(),
 				},
 				ui: { activeModal: null },
 				exit: { onExitTile: false },
@@ -129,6 +136,21 @@ function appStateMachineReducer(state, action) {
 					...state.run,
 					level: finished ? state.run.level : nextLevel,
 					status: finished ? RUN_STATUS.WON : RUN_STATUS.IN_PROGRESS,
+					mapRevision: finished ? state.run.mapRevision : 0, // reset reroll counter on new level
+				},
+				meta: { ...state.meta, lastAction: action.type },
+			};
+		}
+
+		// ================= MAP REROLL (same level) =================
+		case "REGENERATE_MAP": {
+			if (state.run.status !== RUN_STATUS.IN_PROGRESS) return state;
+			if (state.run.level == null) return state;
+			return {
+				...state,
+				run: {
+					...state.run,
+					mapRevision: state.run.mapRevision + 1,
 				},
 				meta: { ...state.meta, lastAction: action.type },
 			};
@@ -174,6 +196,7 @@ export function useAppStateMachine() {
 		playerSteppedOnExit: () => dispatch({ type: "PLAYER_STEPPED_ON_EXIT" }),
 		playerLeftExit: () => dispatch({ type: "PLAYER_LEFT_EXIT" }),
 		advanceLevel: () => dispatch({ type: "ADVANCE_LEVEL" }),
+		regenerateMap: () => dispatch({ type: "REGENERATE_MAP" }), // reroll current level layout
 		// Loading meta
 		setLoadingStart: (at = Date.now()) =>
 			dispatch({ type: "SET_LOADING_START", at }),
@@ -207,4 +230,12 @@ Slices
 Why a reducer?
 - Predictable transitions, easier to test.
 - Enables time‑travel / debugging later if we add dev tooling.
+ 
+Quick mental model
+- initialState defines slices: run (config + progress), ui (current modal), exit (player standing on exit), meta (timing + lastAction only; not gameplay rules).
+- dispatch(action) -> reducer(oldState, action) -> newState (returns same object if nothing changed).
+- Some actions carry data (env, length); others are just a type.
+- meta.lastAction updates only when state really changes; hooks can watch it to react once per transition.
+- Pause is inferred from ui.activeModal === 'pause'; level lives in run.level; neither belong in meta.
+- If removing a field would break core gameplay/UI, it belongs in run/ui/exit; if not, it can live in meta.
 */

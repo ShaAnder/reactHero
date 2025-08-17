@@ -76,7 +76,7 @@ export const usePlayerControls = (
 			document.removeEventListener("keydown", handleKeyDown);
 			document.removeEventListener("keyup", handleKeyUp);
 		};
-	// NOTE: we intentionally exclude `keys` (ref stable) to avoid needless re-subscribes.
+		// NOTE: we intentionally exclude `keys` (ref stable) to avoid needless re-subscribes.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [keyBindings, onToggleMap, onToggleGameMenu, gameState]);
 
@@ -114,11 +114,11 @@ export const usePlayerControls = (
 			framePending = true;
 			requestAnimationFrame(() => {
 				framePending = false;
-				setPlayer((prev) => (
+				setPlayer((prev) =>
 					prev
 						? { ...prev, angle: prev.angle + e.movementX * MOUSE_SENSITIVITY }
 						: prev
-				));
+				);
 			});
 		};
 

@@ -7,8 +7,6 @@ export function useLoadingTransition({
 	gameState,
 	setGameState,
 	GAME_STATES,
-	environmentSelection, // environment chosen pre-run
-	adventureLength,
 	loadNextLevel,
 	loading,
 	map,
@@ -30,8 +28,10 @@ export function useLoadingTransition({
 		}
 
 		if (state.run.status === RUN_STATUS.IDLE) {
-			// First time: start the run.
-			actions.startRun(environmentSelection, adventureLength);
+			// First time: start the run. Fallback defaults if null.
+			const env = state.run.environment ?? "forest";
+			const len = state.run.length ?? 2;
+			actions.startRun(env, len);
 		} else if (state.run.status === RUN_STATUS.IN_PROGRESS) {
 			// Subsequent levels: trigger level load.
 			loadNextLevel();
@@ -39,8 +39,8 @@ export function useLoadingTransition({
 	}, [
 		gameState,
 		state.run.status,
-		environmentSelection,
-		adventureLength,
+		state.run.environment,
+		state.run.length,
 		loadNextLevel,
 		actions,
 		GAME_STATES.LOADING,

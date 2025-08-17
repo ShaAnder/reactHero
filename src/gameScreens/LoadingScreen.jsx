@@ -1,4 +1,7 @@
-import React from "react";
+/**
+ * LoadingScreen
+ * Shown while procedural generation or asset prep runs. Displays error if provided.
+ */
 
 const LoadingScreen = ({ error, message }) => (
 	<div className="screen-container">

@@ -6,7 +6,7 @@ import { getCameraPlane } from "../helpers/getCameraPlane"; // Camera plane math
 // Draw just the 3D scene (walls) using the raycasting pipeline.
 // We figure out the camera plane (how wide the vision fan is) and pass
 // everything to the low‑level rayCaster which does the heavy lifting.
-export const renderRaycaster = (context, player, map) => {
+export const renderRaycaster = (context, player, map, outDepth) => {
 	const screenWidth = context.canvas.width;
 	const screenHeight = context.canvas.height;
 	const aspectRatio = screenWidth / screenHeight;
@@ -19,7 +19,7 @@ export const renderRaycaster = (context, player, map) => {
 	const { planeX, planeY } = getCameraPlane(player.angle, FOV, aspectRatio);
 
 	// Ask the core rayCaster to fill in the vertical wall slices
-	rayCaster({
+	return rayCaster({
 		player,
 		planeX,
 		planeY,
@@ -27,6 +27,7 @@ export const renderRaycaster = (context, player, map) => {
 		screenHeight,
 		map,
 		context,
+		depthBuffer: outDepth,
 	});
 };
 

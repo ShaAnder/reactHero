@@ -50,6 +50,8 @@ const App = () => {
 	//--- STATE ---//
 	const [openMap, setOpenMap] = useState(false);
 	const [showFps] = useState(true);
+	const [showMinimap] = useState(true); // toggleable minimap flag (static for now)
+	const elapsedRef = useRef(0); // cumulative game time (seconds)
 	let content;
 	const [canvas, setCanvasState] = useState(null);
 
@@ -60,12 +62,19 @@ const App = () => {
 	const { gameState, setGameState } = useGameStatus();
 
 	//--- FUNCTIONS ---//
-	const render = () => {
+	const render = (deltaTime) => {
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		const worldRender = { ...world, player }; // converge on canonical world bundle
-		renderWorld(ctx, worldRender, { showMinimap: true });
+		// World object passed to renderer. Player is dynamic; map/spawn/exit/level from controller.
+		// Added time + delta for animation / AI pacing later.
+		const worldRender = {
+			...world,
+			player,
+			time: elapsedRef.current,
+			delta: deltaTime,
+		};
+		renderWorld(ctx, worldRender, { showMinimap });
 
 		renderWorld(ctx, worldRender, {
 			showMinimap: true,
@@ -125,8 +134,11 @@ const App = () => {
 		if (gameState === GAME_STATES.PLAYING) {
 			updatePlayer(deltaTime);
 			// Future: updateEnemies(deltaTime), updateProjectiles(deltaTime), etc.
+			elapsedRef.current += deltaTime;
+			// Handle minimap toggle via key ref (reuse map key for now? or separate binding later)
+			// Example: if holding map key keep minimap visible (optional future behavior)
 		}
-		render();
+		render(deltaTime);
 	}, render);
 
 	// Removed auto-pause on pointer lock loss (pause now only via ESC/menu button)

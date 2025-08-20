@@ -27,7 +27,7 @@ import { ModalIds } from "./constants/modalIds"; // Normalized modal IDs
 // import useOptionsController from "./hooks/gameLogic/useOptionsController";
 
 // Engine
-import { render as gameRender } from "./engine/renderer";
+import { renderWorld } from "./engine/rendering/renderWorld";
 
 // Game screens
 import GameScreen from "./gameScreens/GameScreen";
@@ -62,9 +62,14 @@ const App = () => {
 	//--- FUNCTIONS ---//
 	const render = () => {
 		if (!canvas) return;
-		const context = canvas.getContext("2d");
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		gameRender(context, player, map);
+		const ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		const worldRender = { ...world, player }; // converge on canonical world bundle
+		renderWorld(ctx, worldRender, { showMinimap: true });
+
+		renderWorld(ctx, worldRender, {
+			showMinimap: true,
+		});
 	};
 	const toggleMap = () => setOpenMap((open) => !open);
 

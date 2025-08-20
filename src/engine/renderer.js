@@ -1,11 +1,7 @@
-// Minimap overlay (top‑down view)
-import { renderMinimap } from "./rendering/miniMapRenderer";
-// Core wall / perspective renderer
+// Core wall / perspective renderer (low-level pass only now)
 import { rayCaster } from "./rendering/raycaster";
-// Field of view constant
-import { FOV_ANGLE } from "../../gameConfig";
-// Camera plane math helper
-import { getCameraPlane } from "../helpers/getCameraPlane";
+import { FOV_ANGLE } from "../../gameConfig"; // Field of view constant
+import { getCameraPlane } from "../helpers/getCameraPlane"; // Camera plane math helper
 
 // Draw just the 3D scene (walls) using the raycasting pipeline.
 // We figure out the camera plane (how wide the vision fan is) and pass
@@ -34,35 +30,9 @@ export const renderRaycaster = (context, player, map) => {
 	});
 };
 
-// Master per‑frame render: 3D scene first, then overlays (minimap etc.).
-export const render = (context, player, map) => {
-	// Render the 3D environment
-	renderRaycaster(context, player, map);
-	// Render the small scrolling minimap in a corner
-	renderMinimap(context, player, map);
-};
-
 /*
-HOW THIS FILE WORKS
+renderer.js now only exposes renderRaycaster (pure 3D walls pass).
+Full frame assembly moved to rendering/renderWorld.js.
 
-This module is the “director” for everything drawn each frame. It keeps
-policy (what gets drawn, and in what order) separate from the low‑level
-pixel math.
-
-Flow each frame:
-1. Compute the camera plane vector from the player’s angle + FOV so the
-   ray caster knows how the screen maps to world directions.
-2. Call rayCaster – it shoots one vertical ray per screen column, finds
-   wall hit distances, and paints vertical slices (classic Wolf3D style).
-3. Draw the minimap overlay so you can still orient yourself or debug
-   generation.
-
-Why keep this thin?
-- Easier to add more overlay layers later (HUD, entities, particles).
-- Lets us refactor internal rendering (e.g. sprites) without touching
-  game loop code.
-
-Future extension ideas:
-- Add a world object so render({context, world}) can include enemies.
-- Conditional minimap (only in dev or when a key is held).
+Future: expose depth buffer for sprite/entity sorting.
 */

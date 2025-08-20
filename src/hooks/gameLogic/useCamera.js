@@ -1,6 +1,12 @@
 import { useMemo } from "react";
 import { getCameraPlane } from "../../helpers/getCameraPlane";
 import { FOV_ANGLE } from "../../../gameConfig";
+
+/**
+ * useCamera
+ * Tiny helper: given playerAngle (+ aspect ratio) figure out the camera plane.
+ * Pure + memo'd so we don't spam downstream effects.
+ */
 export function useCamera(playerAngle, aspectRatio = 1) {
 	return useMemo(() => {
 		const { planeX, planeY } = getCameraPlane(
@@ -15,14 +21,7 @@ export function useCamera(playerAngle, aspectRatio = 1) {
 /*
 HOW THIS HOOK WORKS
 
-Pure memo wrapper so downstream renderers (raycaster / minimap) get stable
-plane object identity unless inputs truly change. Avoids accidental extra
-work in effects depending on plane.
+Memo so the plane object identity only changes when angle/aspect do.
 
-Inputs
-playerAngle: direction the player faces (radians)
-aspectRatio: width / height of canvas (stabilizes horizontal FOV)
-
-Output
-{ planeX, planeY } sideways basis vector perpendicular to forward.
+Inputs: angle (radians), aspectRatio (w/h). Output: { planeX, planeY }.
 */

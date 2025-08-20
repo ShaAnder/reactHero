@@ -24,19 +24,28 @@ image to go here
 
 ## 🚀 About This Project
 
-Retro Wolfenstein 3D clone using 2D raycasting, a lot of math and a lot of caffeine, built using Vite + React.
+Retro Wolfenstein 3D clone using 2D raycasting, a lot of math and a lot of
+caffeine, built using Vite + React.
 
 ---
 
 ## 🧠 Core Concepts
 
-The game utilizes 2D [Raycasting Maths](https://lodev.org/cgtutor/raycasting.html) and a game loop created via [RequestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) as the core structure. As well as this we utilize [Delta Time](https://en.wikipedia.org/wiki/Delta_timing) for movement and [Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) drawing and collision logic.
+The game utilizes 2D
+[Raycasting Maths](https://lodev.org/cgtutor/raycasting.html) and a game loop
+created via
+[RequestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)
+as the core structure. As well as this we utilize
+[Delta Time](https://en.wikipedia.org/wiki/Delta_timing) for movement and
+[Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) drawing
+and collision logic.
 
 ---
 
 ## 🗂 Project Structure
 
-So far we have built the project out to looks like this, this will change in the future but for now we're working on tackling the core rendering of objects
+So far we have built the project out to looks like this, this will change in the
+future but for now we're working on tackling the core rendering of objects
 
 ```js
 src / components / canvas / Canvas.jsx;
@@ -45,7 +54,10 @@ map.js;
 playerConfig.js;
 engine / renderer.js;
 hooks / useCanvas.js;
-useGameState.js;
+hooks / gameLogic / usePlayer.js;
+hooks / gameLogic / useCamera.js;
+hooks / gameLogic / usePlayerControls.js;
+hooks / gameLogic / useGameController.js;
 useGameLoop.js;
 utils / FrameLoop.js;
 App.jsx;
@@ -55,12 +67,16 @@ main.jsx;
 - **components/**: Reusable UI and game components (e.g., Canvas)
 - **constants/**: Game constants (map, player, config)
 - **engine/**: rendering and core raycasting / game control logic
-- **hooks/**: Custom React hooks for game state, loops, and canvas
+- **hooks/**: Custom React hooks (player movement, camera plane, input, map
+  generation, loop, canvas)
 - **utils/**: Frame loop and other utilities
 - **App.jsx**: Main entry point for the game logic and rendering
 
-As well as this expect way too many comments, one of the core learning points for this was to learn the math behind raycasting trig in games ect and I am a complete
-novice at this, there will be a math section later so i can explain how it works to the best of my ability but for now here's a warning that it gets comment heavy.
+As well as this expect way too many comments, one of the core learning points
+for this was to learn the math behind raycasting trig in games ect and I am a
+complete novice at this, there will be a math section later so i can explain how
+it works to the best of my ability but for now here's a warning that it gets
+comment heavy.
 
 ---
 
@@ -75,10 +91,13 @@ novice at this, there will be a math section later so i can explain how it works
 
 ## 🎮 Game Loop & Controls
 
-- The game loop is powered by `requestAnimationFrame` and managed by a custom `useGameLoop` hook.
+- The game loop is powered by `requestAnimationFrame` and managed by a custom
+  `useGameLoop` hook.
 - **Delta time** is used for smooth, frame-rate-independent movement.
 
-So far we have implemented basic movement controls, as the application progresses we will add the ability to interact and shoot, for this first iteration I wanted to get core movement and player positioning up and running
+So far we have implemented basic movement controls, as the application
+progresses we will add the ability to interact and shoot, for this first
+iteration I wanted to get core movement and player positioning up and running
 
 - **Keyboard controls**:
   - `W` / `ArrowUp` – Move forward
@@ -93,14 +112,17 @@ So far we have implemented basic movement controls, as the application progresse
 
 - The game uses a `<canvas>` element for all rendering.
 - The **minimap** and player are drawn using 2D Canvas APIs.
-- The raycasting engine (in progress) will render a pseudo-3D view by casting rays from the player's position and drawing vertical wall slices based on distances.
+- The raycasting engine (in progress) will render a pseudo-3D view by casting
+  rays from the player's position and drawing vertical wall slices based on
+  distances.
 - Rendering and game logic are decoupled for clarity and performance.
 
 ---
 
 ## ⚙️ Constants & Tuning
 
-- All game parameters (map layout, tile size, player speed, FOV, etc.) are defined in `/constants/`.
+- All game parameters (map layout, tile size, player speed, FOV, etc.) are
+  defined in `/constants/`.
 - Easy to tweak for rapid prototyping and balancing.
 
 ---
@@ -129,7 +151,8 @@ So far we have implemented basic movement controls, as the application progresse
    npm run dev
 
 3. **Open your browser:**  
-   Visit [http://localhost:5173](http://localhost:5173) (or the port shown in your terminal).
+   Visit [http://localhost:5173](http://localhost:5173) (or the port shown in
+   your terminal).
 
 (Future iterations will be hosted via netlify)
 
@@ -139,9 +162,11 @@ So far we have implemented basic movement controls, as the application progresse
 
 - The game logic is decoupled from React’s render cycle for performance.
 - All movement is frame-rate independent thanks to delta time.
-- The codebase is modularized for easy expansion (add more features, maps, etc.).
+- The codebase is modularized for easy expansion (add more features, maps,
+  etc.).
 - ESLint is used to enforce code quality and catch common bugs.
-- For debugging, use `console.log` in key handlers or conditionally in game logic.
+- For debugging, use `console.log` in key handlers or conditionally in game
+  logic.
 
 ---
 
@@ -155,8 +180,10 @@ Screenshots will go here once I get rendering working
 
 ## 🙏 Credits
 
-- [Lode's Computer Graphics Tutorial](https://lodev.org/cgtutor/raycasting.html) for raycasting math
-- [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) for Canvas API references
+- [Lode's Computer Graphics Tutorial](https://lodev.org/cgtutor/raycasting.html)
+  for raycasting math
+- [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+  for Canvas API references
 - [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D) for inspiration
 
 ---

@@ -8,8 +8,18 @@ import { getIsWall } from "../../helpers/getIsWall";
 import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
 
 /**
- * Maintains & mutates the player transform (x,y,angle). Consumes a keysRef and
- * applies movement + collision. Does not set up listeners (separation of concerns).
+ * usePlayer
+ * Keeps track of player position + angle and moves them based on a keys ref.
+ * No event listeners here (input hook handles that). Just math & collision.
+ *
+ * Inputs: map (for walls), spawn ([x,y] tile), keysRef.current booleans.
+ * Returns: { player, setPlayer, updatePlayer(dt) }.
+ *
+ * Reset: whenever spawn or map changes we drop the player at spawn and face
+ * roughly toward the center (same rule for level change and reroll for now).
+ *
+ * Notes: angle is wrapped into [0, 2π); collision is simple per‑axis so you
+ * can slide along walls.
  */
 export function usePlayer(map, spawn, keysRef) {
 	const [player, setPlayer] = useState(() => ({
@@ -20,7 +30,7 @@ export function usePlayer(map, spawn, keysRef) {
 		rotationSpeed: PLAYER_ROTATION_SPEED,
 	}));
 
-	// When a new spawn or map arrives (new level) drop the player there and face inward
+	// New spawn/map -> reposition & face inward
 	useEffect(() => {
 		if (!spawn) return;
 		setPlayer((p) => ({
@@ -77,18 +87,15 @@ export function usePlayer(map, spawn, keysRef) {
 /*
 HOW THIS HOOK WORKS
 
-Flow each frame (when game loop calls updatePlayer):
+Per frame when updatePlayer runs:
 1. Read ephemeral input booleans from keysRef.current.
 2. Adjust angle first (so movement uses the new facing immediately).
 3. Build a movement vector from forward/back + strafe components.
 4. Attempt X move then Y move separately for simple wall sliding.
 5. Normalize angle into [0, 2π) so it never drifts out of range.
 
-Collision Strategy
-- getIsWall tests proposed new X independently from Y allowing natural
-  sliding along walls when one axis is blocked.
+Collision: test X then Y separately for cheap wall sliding.
 
-Why keep player in state (not just a ref)?
-- React devtools visibility; potential future UI bindings (HUD showing coords).
-If performance becomes an issue we can store in a ref and publish snapshots.
+Why state not only a ref? Easier to inspect in devtools / maybe show on HUD.
+If it gets hot we can switch to a ref + snapshot later.
 */

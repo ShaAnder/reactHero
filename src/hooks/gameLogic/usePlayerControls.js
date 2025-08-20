@@ -4,15 +4,20 @@ import { ModalIds } from "../../constants/modalIds";
 // DEFAULT_KEY_BINDINGS import retained elsewhere; can remove if unused.
 
 /**
- * Unified input layer: keyboard + mouse look. Returns a ref of booleans so
- * movement logic can read current intent without triggering React re-renders.
+ * usePlayerControls
+ * Keyboard + mouse input. Gives you a ref with flags you can read every frame.
+ * Only active while gameState === PLAYING.
+ *
+ * Inputs: canvas, setPlayer (for mouse look), keyBindings, two optional toggle callbacks.
+ * Returns: ref.current = { up, down, left, right, strafeLeft, strafeRight, map, pause }.
+ * Resets flags when leaving PLAYING so nothing sticks.
  */
 export const usePlayerControls = (
 	canvas,
 	setPlayer,
 	keyBindings,
 	onToggleMap,
-	onToggleGameMenu,
+	onPauseToggle,
 	gameState,
 	externalKeysRef
 ) => {
@@ -31,9 +36,11 @@ export const usePlayerControls = (
 
 	// --- Keyboard Controls ---
 
-	// Add/remove event listeners only when entering/leaving PLAYING
+	// Add/remove key listeners only while playing
 	useEffect(() => {
-		if (gameState !== "PLAYING" && gameState !== "playing") return;
+		// accept either 'playing' or 'PLAYING' (enum uses lowercase)
+		const isPlaying = gameState === "playing" || gameState === "PLAYING";
+		if (!isPlaying) return;
 
 		const handleKeyDown = (e) => {
 			const key = e.key.toLowerCase();
@@ -51,7 +58,7 @@ export const usePlayerControls = (
 			} else if (key === keyBindings.pause) {
 				if (!keys.current.pause) {
 					keys.current.pause = true;
-					if (onToggleGameMenu) onToggleGameMenu();
+					if (onPauseToggle) onPauseToggle();
 				}
 			}
 		};
@@ -79,11 +86,12 @@ export const usePlayerControls = (
 		};
 		// NOTE: we intentionally exclude `keys` (ref stable) to avoid needless re-subscribes.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [keyBindings, onToggleMap, onToggleGameMenu, gameState]);
+	}, [keyBindings, onToggleMap, onPauseToggle, gameState]);
 
-	// Reset keys ref only when leaving PLAYING
+	// Leaving PLAYING -> clear flags
 	useEffect(() => {
-		if (gameState === "playing") return;
+		const isPlaying = gameState === "playing" || gameState === "PLAYING";
+		if (isPlaying) return;
 		keys.current = {
 			up: false,
 			down: false,
@@ -106,7 +114,7 @@ export const usePlayerControls = (
 			canvas.requestPointerLock?.();
 		};
 
-		// Throttle via requestAnimationFrame to avoid overwhelming React & reduce risk of cascading updates
+		// rAF throttle to keep angle updates light
 		let framePending = false;
 		const handleMouseMove = (e) => {
 			if (document.pointerLockElement !== canvas) return;

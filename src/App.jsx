@@ -1,9 +1,5 @@
 import SettingsScreen from "./gameScreens/SettingsScreen";
-/**
- * App (root orchestrator)
- * Wires: reducer (run/ui/meta) + game loop + map generation + input hooks + screen routing.
- * Keeps small local UI flags (map, fps) outside reducer.
- */
+// Root app: wires state machine, generation, loop, input, screens.
 // IMPORTS //
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useAppStateMachine, RUN_STATUS } from "./hooks/app/useAppStateMachine";
@@ -27,7 +23,8 @@ import { ModalIds } from "./constants/modalIds"; // Normalized modal IDs
 // import useOptionsController from "./hooks/gameLogic/useOptionsController";
 
 // Engine
-import { renderWorld } from "./engine/rendering/renderWorld";
+import { renderWorld } from "./engine/rendering/renderWorld"; // main frame renderer
+import { DEBUG_FLAGS } from "./constants/debugConfig"; // debug toggles
 
 // Game screens
 import GameScreen from "./gameScreens/GameScreen";
@@ -43,42 +40,38 @@ import { PauseMenu } from "./components/modals/PauseMenu";
 import { QuitModal } from "./components/modals/QuitModal";
 
 const App = () => {
-	// App state machine (now also stores pre-run config while IDLE)
+	// State machine (run config + ui)
 	const { state, actions, isFinalLevel } = useAppStateMachine();
 
-	// Local UI state still outside machine (map open toggle)
-	//--- STATE ---//
+	// Local UI flags
 	const [openMap, setOpenMap] = useState(false);
 	const [showFps] = useState(true);
-	const [showMinimap] = useState(true); // toggleable minimap flag (static for now)
-	const elapsedRef = useRef(0); // cumulative game time (seconds)
+	const [showMinimap, setShowMinimap] = useState(
+		DEBUG_FLAGS.SHOW_MINIMAP_DEFAULT
+	); // initial minimap visibility
+	const [showHUD, setShowHUD] = useState(DEBUG_FLAGS.SHOW_HUD_DEFAULT);
+	const elapsedRef = useRef(0); // seconds since run start
 	let content;
 	const [canvas, setCanvasState] = useState(null);
 
-	// Local derived UI flags from state machine
-	const activeModal = state.ui.activeModal; // 'pause' | 'options' | 'quit' | 'delve' | null
+	const activeModal = state.ui.activeModal;
 
-	// Obtain global game state early (needed by handlers below)
+	// Game state enum wrapper
 	const { gameState, setGameState } = useGameStatus();
 
-	//--- FUNCTIONS ---//
+	// Render callback
 	const render = (deltaTime) => {
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		// World object passed to renderer. Player is dynamic; map/spawn/exit/level from controller.
-		// Added time + delta for animation / AI pacing later.
+		// Build world payload with clocks
 		const worldRender = {
 			...world,
 			player,
 			time: elapsedRef.current,
 			delta: deltaTime,
 		};
-		renderWorld(ctx, worldRender, { showMinimap });
-
-		renderWorld(ctx, worldRender, {
-			showMinimap: true,
-		});
+		renderWorld(ctx, worldRender, { showMinimap, showHUD, fps });
 	};
 	const toggleMap = () => setOpenMap((open) => !open);
 
@@ -97,14 +90,14 @@ const App = () => {
 	const handleOptions = () => actions.setActiveModal(ModalIds.OPTIONS);
 	const handleCloseOptions = () => actions.setActiveModal(null);
 
-	//--- HOOKS ---//
+	// Controllers & data
 	const { map, spawn, exit, loading, error, loadNextLevel, world } =
 		useGameController({
 			environment: state.run.environment || DEFAULT_MAP_CONFIG.environment,
 			level: state.run.level, // fed into world bundle
 		});
 
-	// Input + player split
+	// Input + player
 	const [internalCanvas, setCanvas] = useState(null);
 	const keysRef = useRef({
 		up: false,
@@ -126,26 +119,25 @@ const App = () => {
 		gameState,
 		keysRef
 	);
-	// camera plane (currently unused directly but kept for renderer parity if needed)
+	// Camera plane (kept for possible future use)
 	useCamera(player.angle, 1);
-	// canvas blur effect
+	// Blur canvas when paused
 	useCanvasBlur(canvas, gameState, GAME_STATES.PAUSED);
 	const fps = useGameLoop((deltaTime) => {
 		if (gameState === GAME_STATES.PLAYING) {
 			updatePlayer(deltaTime);
-			// Future: updateEnemies(deltaTime), updateProjectiles(deltaTime), etc.
+			// Future: enemy updates etc.
 			elapsedRef.current += deltaTime;
-			// Handle minimap toggle via key ref (reuse map key for now? or separate binding later)
-			// Example: if holding map key keep minimap visible (optional future behavior)
+			// (Possible future: hold key to show map)
 		}
 		render(deltaTime);
 	}, render);
 
-	// Removed auto-pause on pointer lock loss (pause now only via ESC/menu button)
+	// Pointer lock loss no longer auto-pauses
 
-	// Pause/resume hotkey handling moved into usePauseControl
+	// Pause hotkey lives in usePauseControl
 
-	// Loading transition + run start/level advance
+	// Loading transition + run advance
 	useLoadingTransition({
 		gameState,
 		setGameState,
@@ -162,7 +154,17 @@ const App = () => {
 		minDuration: 2000,
 	});
 
-	// Reroll current level if mapRevision increments (trigger a reload cycle)
+	// Debug toggles (N minimap, H HUD)
+	useEffect(() => {
+		const handler = (e) => {
+			if (e.key === "n" || e.key === "N") setShowMinimap((v) => !v);
+			if (e.key === "h" || e.key === "H") setShowHUD((v) => !v);
+		};
+		window.addEventListener("keydown", handler);
+		return () => window.removeEventListener("keydown", handler);
+	}, []);
+
+	// If map revision changes, reload level
 	const lastMapRevisionRef = useRef(0);
 	useEffect(() => {
 		if (state.run.status !== RUN_STATUS.IN_PROGRESS) return;
@@ -175,8 +177,7 @@ const App = () => {
 		}
 	}, [state.run.mapRevision, state.run.status, setGameState]); // GAME_STATES.LOADING is static enum
 
-	// Exit detection & optional delve modal
-	// Exit detection now could consume world.exit; keep both until full migration
+	// Exit detection + optional delve modal
 	useExitDetection({
 		player,
 		exit: world.exit,
@@ -189,9 +190,9 @@ const App = () => {
 		debug: false,
 	});
 
-	// (Legacy manual LOADING->PLAYING timing effect removed; handled by useLoadingTransition reducer meta timestamps)
+	// Old manual loading timing removed
 
-	// --- GAME STATUS RENDERING ---//
+	// Screen routing
 	switch (gameState) {
 		case GAME_STATES.LANDING:
 			content = <LandingScreen setGameState={setGameState} />;

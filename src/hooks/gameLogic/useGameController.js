@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo } from "react";
-import { generateMap } from "../../engine/generation/map/createDungeon";
-import { DEFAULT_MAP_CONFIG } from "../../../gameConfig";
+import { generateMap } from "../../engine/generation/map/createDungeon"; // map dispatcher
+import { DEBUG_FLAGS } from "../../constants/debugConfig";
+import { TILE_SIZE } from "../../../gameConfig";
+import { DEFAULT_MAP_CONFIG } from "../../../gameConfig"; // defaults
 
 /**
  * useGameController
@@ -23,6 +25,7 @@ export const useGameController = ({ environment, level }) => {
 	const [exit, setExit] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
+	const [meta, setMeta] = useState(null); // generation metadata (stats)
 
 	// Generate a new map + spawn + exit
 
@@ -47,10 +50,12 @@ export const useGameController = ({ environment, level }) => {
 				map,
 				start: spawnPosition,
 				exit: exitPosition,
+				meta,
 			} = await generateMap(config);
 			setMap(map);
 			setSpawn(spawnPosition);
 			setExit(exitPosition);
+			setMeta(meta);
 			setLoading(false);
 		} catch (err) {
 			console.error("[useGameController] Error generating map:", err);
@@ -63,10 +68,20 @@ export const useGameController = ({ environment, level }) => {
 
 	// Return all game state and the function to load the next level
 	// World object (normalized bundle) – consumers can migrate to this gradually
-	const world = useMemo(
-		() => ({ map, spawn, exit, level }),
-		[map, spawn, exit, level]
-	);
+	// Normalized world bundle (ready to grow with entities, meta, etc.)
+	const world = useMemo(() => {
+		let entities = [];
+		if (DEBUG_FLAGS.ENABLE_SAMPLE_ENTITY && exit) {
+			entities.push({
+				id: "exit-marker",
+				type: "marker",
+				x: (exit[0] + 0.5) * TILE_SIZE,
+				y: (exit[1] + 0.5) * TILE_SIZE,
+				color: "#ff3366",
+			});
+		}
+		return { map, spawn, exit, level, meta, entities };
+	}, [map, spawn, exit, level, meta]);
 
 	return {
 		map,
@@ -76,6 +91,7 @@ export const useGameController = ({ environment, level }) => {
 		error,
 		loadNextLevel,
 		world,
+		meta, // direct access if consumers want stats without digging
 	};
 };
 

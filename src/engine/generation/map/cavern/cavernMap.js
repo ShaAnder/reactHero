@@ -3,60 +3,43 @@ import { validateMap } from "../utils/validateMap";
 import { getFurthestFloor } from "../utils/getFurthestTile";
 import { DEFAULT_MAP_CONFIG } from "../../../../../gameConfig";
 import { caStep } from "./cavernUtils/caStep";
+import { log } from "../../../../utils/logger";
+import { getOrCreateRng } from "../../../../utils/rng";
 
-/*
-HOW THIS FILE WORKS / CAVERN GENERATION
-
-Goal: produce an “organic” cave with a guaranteed safe spawn and a distant
-exit that encourages exploration.
-
-Recipe each attempt:
-1. Fill a fresh blank grid with random walls vs floors (noise field).
-2. Run several Cellular Automata smoothing passes so isolated pixels merge
-	into chunky blobs that feel cave‑like.
-3. Force outer border to all walls (no leaking off the map edges).
-4. Carve a small spawn room (3x3) somewhere safely padded from edges so
-	the player always starts in open space.
-5. Count total and reachable floor tiles (diagnostics + early rejection of
-	cramped or isolated starts).
-6. Find the furthest reachable floor from the spawn (simple BFS utility) –
-	this becomes our exit so the player crosses the cave.
-7. Validate there is an actual path from start to exit (connectivity + both
-	on open tiles). If anything fails, retry.
-
-We cap attempts to avoid infinite loops. Detailed console warnings help tune
-parameters when generation is too strict.
-*/
+// Cavern: noise → smooth → carve spawn → pick distant exit → validate path.
 export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
-	// COORDINATE POLICY: Returns start/exit as [x,y]. Internal helpers may use [y,x]; convert at boundaries.
+	// Returns [x,y]; helpers may use [y,x]. Swap when calling them.
 	const dimensions = options.dimensions;
 	const fillProbability = options.fillProbability || 0.45;
 	const iterations = options.caIterations || 5;
 	const padding = 5;
 	const spawnSize = 3;
 
-	let map, start, exit;
-	let valid = false;
-	let attempts = 0;
-	const maxAttempts = 60;
+	let map, start, exit; // outputs
+	let valid = false; // success flag
+	let attempts = 0; // attempt counter
+	const maxAttempts = 60; // cap
+	let lastFloorCount = null; // stats: total floor tiles
+	let lastReachable = null; // stats: reachable floor from spawn
 
+	const rng = getOrCreateRng(options);
 	while (!valid && attempts < maxAttempts) {
 		attempts++;
 		try {
-			// Random noise fill (Bernoulli trial per cell)
+			// Fill with random walls/floors
 			map = getBlankMap(1, dimensions);
 			for (let y = 0; y < dimensions; y++) {
 				for (let x = 0; x < dimensions; x++) {
-					map[y][x] = Math.random() < fillProbability ? 1 : 0;
+					map[y][x] = rng() < fillProbability ? 1 : 0;
 				}
 			}
 
-			// CA smoothing: clumps walls / expands pockets creating natural blobs
+			// Smooth a few times to form blobs
 			for (let i = 0; i < iterations; i++) {
 				map = caStep(map);
 			}
 
-			// Hard border walls so the player never walks out of bounds
+			// Solid border
 			for (let i = 0; i < dimensions; i++) {
 				map[0][i] = 1;
 				map[dimensions - 1][i] = 1;
@@ -64,11 +47,9 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 				map[i][dimensions - 1] = 1;
 			}
 
-			// Carve spawn room: ensure guaranteed breathable space to start
-			const spawnX =
-				padding + Math.floor(Math.random() * (dimensions - 2 * padding));
-			const spawnY =
-				padding + Math.floor(Math.random() * (dimensions - 2 * padding));
+			// Carve a small open spawn room
+			const spawnX = padding + Math.floor(rng() * (dimensions - 2 * padding));
+			const spawnY = padding + Math.floor(rng() * (dimensions - 2 * padding));
 			for (
 				let dy = -Math.floor(spawnSize / 2);
 				dy <= Math.floor(spawnSize / 2);
@@ -88,59 +69,65 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 			}
 			start = [spawnX, spawnY];
 
-			// Diagnostics: reject caves that are basically solid walls
+			// Reject maps with too few floors
 			let floorCount = 0;
 			for (let y = 0; y < dimensions; y++)
 				for (let x = 0; x < dimensions; x++) if (map[y][x] === 0) floorCount++;
 			if (floorCount < 10) {
-				console.warn(
-					`[CavernGen] Attempt ${attempts}: Too few floor tiles (${floorCount})`
+				log.warn(
+					"CavernGen",
+					`Attempt ${attempts}: Too few floor tiles (${floorCount})`
 				);
 				continue;
 			}
 
-			// Connectivity from spawn: if isolated, pick a new noise sample
+			// Reject isolated starts
 			let reachableCount = countReachable(map, start);
 			if (reachableCount < 10) {
-				console.warn(
-					`[CavernGen] Attempt ${attempts}: Spawn room is isolated (${reachableCount} reachable)`
+				log.warn(
+					"CavernGen",
+					`Attempt ${attempts}: Spawn room is isolated (${reachableCount} reachable)`
 				);
 				continue;
 			}
 
-			// Goal selection: furthest reachable floor tile encourages traversal
+			// Pick furthest reachable tile as exit
 			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
 			if (!rawExit) {
-				console.warn(
-					`[CavernGen] Attempt ${attempts}: Failed to find exit tile`
-				);
+				log.warn("CavernGen", `Attempt ${attempts}: Failed to find exit tile`);
 				continue;
 			}
 			exit = [rawExit[1], rawExit[0]];
 			if (exit[0] === start[0] && exit[1] === start[1]) {
-				console.warn(`[CavernGen] Attempt ${attempts}: Exit same as start`);
+				log.warn("CavernGen", `Attempt ${attempts}: Exit same as start`);
 				continue;
 			}
 
-			// Final validation: ensure path exists start -> exit
+			// Ensure path start→exit
 			valid = validateMap(map, [start[1], start[0]], [exit[1], exit[0]]);
 			if (!valid) {
-				console.warn(
-					`[CavernGen] Attempt ${attempts}: Map validation failed (no path start→exit)`
+				log.warn(
+					"CavernGen",
+					`Attempt ${attempts}: Map validation failed (no path start→exit)`
 				);
 				continue;
 			}
 
-			// Defensive sanity: ensure both endpoints are truly open
+			// Both endpoints must be floor
 			if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
-				console.warn(
-					`[CavernGen] Attempt ${attempts}: Spawn or exit is not on a walkable tile`
+				log.warn(
+					"CavernGen",
+					`Attempt ${attempts}: Spawn or exit is not on a walkable tile`
 				);
 				continue;
 			}
+			// Record stats for successful attempt
+			lastFloorCount = floorCount;
+			lastReachable = reachableCount;
 		} catch (err) {
-			console.warn(
-				`[CavernGen] Generation error on attempt ${attempts}: ${err.message}`
+			log.warn(
+				"CavernGen",
+				`Generation error on attempt ${attempts}: ${err.message}`
 			);
 			continue;
 		}
@@ -149,7 +136,14 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 	if (!valid)
 		throw new Error("Failed to generate valid cave after max attempts");
 
-	return { map, start, exit };
+	// Attach stats for meta consumption
+	const stats = {
+		attempts,
+		rooms: null, // cavern has no discrete 'rooms' concept (could later add pockets)
+		floorCount: lastFloorCount,
+		reachable: lastReachable,
+	};
+	return { map, start, exit, stats };
 };
 
 // BFS reachability count from spawn: helps reject isolated or tiny pockets

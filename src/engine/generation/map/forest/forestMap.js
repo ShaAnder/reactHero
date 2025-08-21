@@ -5,33 +5,12 @@ import { getFurthestFloor } from "../utils/getFurthestTile";
 import { DEFAULT_MAP_CONFIG } from "../../../../../gameConfig";
 import { carveOrganicClearing } from "./forestUtils/carveOrganicRoom";
 import { relaxSeeds } from "./forestUtils/relaxedSeeds";
+import { log } from "../../../../utils/logger";
+import { getOrCreateRng } from "../../../../utils/rng";
 
-/*
-HOW THIS FILE WORKS / FOREST GENERATION
-
-We simulate a cluster of forest clearings linked by winding paths.
-
-Attempt loop outline:
-1. Carve a guaranteed spawn clearing somewhere safely padded from edges.
-2. Scatter seed points for other clearings (avoid clumping very tight).
-3. Assign each tile to its nearest seed (Voronoi partition using squared
-	distance for speed) creating coarse regions.
-4. Optionally relax seeds (Lloyd style) to nudge them toward their region
-	centroids for a more balanced spread.
-5. Carve an organic clearing around each seed (variable radius / blobby carve).
-6. Connect clearings using a random‑walk tunneler (meandering natural paths).
-7. Pick the furthest reachable floor tile from spawn as the exit so the
-	player naturally traverses the space.
-8. Validate connectivity (BFS). Retry if anything fails.
-
-Design goals:
-- Guaranteed safe start.
-- Variety from seed jitter + organic carving.
-- Natural path layout via walkers instead of straight corridors.
-*/
+// Forest: carve scattered clearings then link them with winding paths.
 export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
-	// COORDINATE POLICY: This generator returns start/exit in [x,y] order.
-	// Internally some utilities (e.g., getFurthestFloor) expect [y,x]; we adapt at call boundaries.
+	// Coordinates returned as [x,y]. Some helpers take [y,x]; we swap where needed.
 	const dimensions = options.dimensions || 65;
 	const numClearings = options.numRegions || 10;
 	const clearingSize = [
@@ -43,39 +22,38 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 	const padding = 5;
 	const relaxationIterations = options.voronoiRelaxation || 1;
 
-	let map, start, exit;
-	let valid = false;
-	let attempts = 0;
-	const maxAttempts = 60;
+	let map, start, exit; // final outputs
+	let roomCenters = []; // collected clearing centers for stats + walker
+	let valid = false; // success flag for attempt loop
+	let attempts = 0; // how many tries
+	const maxAttempts = 60; // safety cap (tunable)
 
+	const rng = getOrCreateRng(options);
 	while (!valid && attempts < maxAttempts) {
 		attempts++;
 		try {
-			// Guaranteed spawn clearing first so we always have a valid start
+			// Spawn clearing first so we always have a safe start
 			map = getBlankMap(1, dimensions);
 			const spawnX =
 				padding +
 				maxClearingRadius +
-				Math.floor(
-					Math.random() * (dimensions - 2 * (padding + maxClearingRadius))
-				);
+				Math.floor(rng() * (dimensions - 2 * (padding + maxClearingRadius)));
 			const spawnY =
 				padding +
 				maxClearingRadius +
-				Math.floor(
-					Math.random() * (dimensions - 2 * (padding + maxClearingRadius))
-				);
+				Math.floor(rng() * (dimensions - 2 * (padding + maxClearingRadius)));
 			const spawnSize = 3;
 			const spawnCenter = carveOrganicClearing(map, spawnX, spawnY, spawnSize);
 			if (!spawnCenter) {
-				console.warn(
-					`[ForestGen] Failed to carve spawn room at: ${spawnX} ${spawnY}`
+				log.warn(
+					"ForestGen",
+					`Failed to carve spawn room at: ${spawnX} ${spawnY}`
 				);
 				continue;
 			}
 			start = [spawnCenter[1], spawnCenter[0]]; // [x, y]
 
-			// Scatter seed points (first is spawn) with slight spacing constraint
+			// Seed other clearings (avoid tight clustering)
 			let seeds = [{ x: spawnCenter[1], y: spawnCenter[0] }];
 			for (let i = 1; i < numClearings; i++) {
 				let sx,
@@ -86,13 +64,13 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 						padding +
 						maxClearingRadius +
 						Math.floor(
-							Math.random() * (dimensions - 2 * (padding + maxClearingRadius))
+							rng() * (dimensions - 2 * (padding + maxClearingRadius))
 						);
 					sy =
 						padding +
 						maxClearingRadius +
 						Math.floor(
-							Math.random() * (dimensions - 2 * (padding + maxClearingRadius))
+							rng() * (dimensions - 2 * (padding + maxClearingRadius))
 						);
 					tries++;
 				} while (
@@ -102,7 +80,7 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 				seeds.push({ x: sx, y: sy });
 			}
 
-			// Voronoi assignment (squared distance) -> region indices per tile
+			// Assign each tile to nearest seed (simple Voronoi)
 			const regionMap = getBlankMap(-1, dimensions);
 			for (let y = 0; y < dimensions; y++) {
 				for (let x = 0; x < dimensions; x++) {
@@ -121,43 +99,43 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 				}
 			}
 
-			// Optional Lloyd-like relaxation to avoid clustered seeds
+			// Optional relaxation to spread seeds more evenly
 			seeds = relaxSeeds(seeds, regionMap, dimensions, relaxationIterations);
 
-			// Carve an organic blob clearing for each seed
-			let roomCenters = [];
+			// Carve a blobby clearing around each seed
+			roomCenters = []; // reset each attempt
 			for (let i = 0; i < seeds.length; i++) {
 				const { x, y } = seeds[i];
 				const size =
 					clearingSize[0] +
-					Math.floor(Math.random() * (clearingSize[1] - clearingSize[0] + 1));
+					Math.floor(rng() * (clearingSize[1] - clearingSize[0] + 1));
 				carveOrganicClearing(map, x, y, size);
 				roomCenters.push([y, x]);
 			}
 			if (roomCenters.length < 2) throw new Error("Too few clearings");
 
-			// Random walker tunneling to connect clearings with natural winding paths
+			// Connect clearings with winding tunnels
 			initRandomWalker(map, roomCenters, walkerPresets);
 
-			// Exit selection: furthest reachable floor from spawn
-			// getFurthestFloor expects [y,x] so supply swapped, then adapt back
+			// Pick furthest reachable floor as exit (swap coord order for helper)
 			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
 			if (!rawExit) throw new Error("Failed to find exit tile");
 			exit = [rawExit[1], rawExit[0]];
 			if (exit[0] === start[0] && exit[1] === start[1])
 				throw new Error("Exit same as start");
 
-			// Connectivity validation (BFS in validateMap)
+			// Validate start→exit path
 			valid = validateMap(map, [start[1], start[0]], [exit[1], exit[0]]);
 			if (!valid) throw new Error("Map validation failed (no path start→exit)");
 
-			// Defensive sanity: both endpoints must be open tiles
+			// Both endpoints must be floor
 			if (map[start[1]][start[0]] !== 0 || map[exit[1]][exit[0]] !== 0) {
 				throw new Error("Spawn or exit is not on a walkable tile");
 			}
 		} catch (err) {
-			console.warn(
-				`[ForestGen] Generation error on attempt ${attempts}: ${err.message}`
+			log.warn(
+				"ForestGen",
+				`Generation error on attempt ${attempts}: ${err.message}`
 			);
 			continue;
 		}
@@ -166,7 +144,9 @@ export const generateForest = (options = DEFAULT_MAP_CONFIG) => {
 	if (!valid)
 		throw new Error("Failed to generate valid forest after max attempts");
 
-	return { map, start, exit };
+	// Stats (consumed by meta layer)
+	const stats = { attempts, rooms: (roomCenters || []).length };
+	return { map, start, exit, stats };
 };
 
 /*

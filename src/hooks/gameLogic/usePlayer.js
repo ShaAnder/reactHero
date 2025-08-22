@@ -6,6 +6,7 @@ import {
 import { TILE_SIZE } from "../../../gameConfig";
 import { getIsWall } from "../../helpers/getIsWall";
 import { setPlayerFacingInward } from "../../helpers/setPlayerFacingCenter";
+import { HALF_PI, TWO_PI } from "../../constants/math";
 
 /**
  * usePlayer
@@ -61,19 +62,19 @@ export function usePlayer(map, spawn, keysRef) {
 					moveStepY -= Math.sin(angle) * moveSpeed * deltaTime;
 				}
 				if (k.strafeLeft) {
-					moveStepX += Math.cos(angle - Math.PI / 2) * moveSpeed * deltaTime;
-					moveStepY += Math.sin(angle - Math.PI / 2) * moveSpeed * deltaTime;
+					moveStepX += Math.cos(angle - HALF_PI) * moveSpeed * deltaTime;
+					moveStepY += Math.sin(angle - HALF_PI) * moveSpeed * deltaTime;
 				}
 				if (k.strafeRight) {
-					moveStepX += Math.cos(angle + Math.PI / 2) * moveSpeed * deltaTime;
-					moveStepY += Math.sin(angle + Math.PI / 2) * moveSpeed * deltaTime;
+					moveStepX += Math.cos(angle + HALF_PI) * moveSpeed * deltaTime;
+					moveStepY += Math.sin(angle + HALF_PI) * moveSpeed * deltaTime;
 				}
 
 				if (map && !getIsWall(x + moveStepX, y, map)) x += moveStepX;
 				if (map && !getIsWall(x, y + moveStepY, map)) y += moveStepY;
 
-				if (angle < 0) angle += Math.PI * 2;
-				if (angle >= Math.PI * 2) angle -= Math.PI * 2;
+				if (angle < 0) angle += TWO_PI;
+				if (angle >= TWO_PI) angle -= TWO_PI;
 
 				return { ...prev, x, y, angle };
 			});

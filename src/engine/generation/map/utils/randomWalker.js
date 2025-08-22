@@ -8,8 +8,12 @@ We connect room centers using two passes:
 Result: every room is reachable, with some organic variation.
 */
 
+import { getOrCreateRng } from "../../../../utils/rng";
+import { SHUFFLE_BIAS, TURN_CHANCE } from "../../../../constants/generation";
+
 export const initRandomWalker = (map, roomCenters, options) => {
 	const { branchChance, loopChance, minCorridor, maxCorridor } = options;
+	const rng = getOrCreateRng(options);
 
 	const directions = [
 		[-1, 0], // up
@@ -22,7 +26,9 @@ export const initRandomWalker = (map, roomCenters, options) => {
 		y > 0 && y < map.length - 1 && x > 0 && x < map[0].length - 1;
 
 	// Shuffle the room list so the order is random every time
-	const shuffledRooms = roomCenters.slice().sort(() => Math.random() - 0.5);
+	const shuffledRooms = roomCenters
+		.slice()
+		.sort(() => rng() - SHUFFLE_BIAS);
 
 	// PHASE 1: straight(ish) connections for guaranteed reachability
 	for (let i = 0; i < shuffledRooms.length - 1; i++) {
@@ -34,14 +40,14 @@ export const initRandomWalker = (map, roomCenters, options) => {
 			// Pick a random corridor length for this segment
 			const steps =
 				minCorridor +
-				Math.floor(Math.random() * (maxCorridor - minCorridor + 1));
+				Math.floor(rng() * (maxCorridor - minCorridor + 1));
 
 			for (let s = 0; s < steps; s++) {
 				if (x === targetX && y === targetY) break;
 				if (isInside(y, x)) map[y][x] = 0;
 
 				// Move one step in the current direction
-				let dir = pickInitDir(y, x, targetY, targetX);
+				let dir = pickInitDir(y, x, targetY, targetX, rng);
 				const ny = y + dir[0];
 				const nx = x + dir[1];
 
@@ -64,14 +70,14 @@ export const initRandomWalker = (map, roomCenters, options) => {
 		while (x !== targetX || y !== targetY) {
 			const steps =
 				minCorridor +
-				Math.floor(Math.random() * (maxCorridor - minCorridor + 1));
+				Math.floor(rng() * (maxCorridor - minCorridor + 1));
 
 			for (let s = 0; s < steps; s++) {
 				if (x === targetX && y === targetY) break;
 				if (isInside(y, x)) map[y][x] = 0;
 
 				// Move one step in the current direction
-				let dir = pickInitDir(y, x, targetY, targetX);
+				let dir = pickInitDir(y, x, targetY, targetX, rng);
 				const ny = y + dir[0];
 				const nx = x + dir[1];
 
@@ -81,17 +87,17 @@ export const initRandomWalker = (map, roomCenters, options) => {
 					map[y][x] = 0;
 
 					// Branches and loops only in phase 2
-					if (Math.random() < branchChance) {
+					if (rng() < (branchChance ?? TURN_CHANCE)) {
 						const [dy, dx] =
-							directions[Math.floor(Math.random() * directions.length)];
+							directions[Math.floor(rng() * directions.length)];
 						const by = y + dy;
 						const bx = x + dx;
 						if (isInside(by, bx)) map[by][bx] = 0;
 					}
 
-					if (Math.random() < loopChance && roomCenters.length > 2) {
+					if (rng() < (loopChance ?? TURN_CHANCE) && roomCenters.length > 2) {
 						const randRoom =
-							roomCenters[Math.floor(Math.random() * roomCenters.length)];
+							roomCenters[Math.floor(rng() * roomCenters.length)];
 						y = randRoom[0];
 						x = randRoom[1];
 						break;
@@ -105,11 +111,11 @@ export const initRandomWalker = (map, roomCenters, options) => {
 };
 
 // Rough direction toward target (bias vertical vs horizontal randomly)
-const pickInitDir = (y, x, targetY, targetX) => {
+const pickInitDir = (y, x, targetY, targetX, rng = Math.random) => {
 	const dy = targetY > y ? 1 : targetY < y ? -1 : 0;
 	const dx = targetX > x ? 1 : targetX < x ? -1 : 0;
 	// Randomly choose to prioritize vertical or horizontal movement
-	if (Math.random() < 0.5) {
+	if (rng() < SHUFFLE_BIAS) {
 		return [dy, 0];
 	} else {
 		return [0, dx];

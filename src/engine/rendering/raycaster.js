@@ -1,5 +1,7 @@
 import { TILE_SIZE } from "../../../gameConfig";
 import { DEBUG_FLAGS } from "../../constants/debugConfig";
+import { RAY_STEP, MIN_PERP_DISTANCE } from "../../constants/rendering";
+import { WALL_COLOR_LIGHT, WALL_COLOR_DARK } from "../../constants/colors";
 import { log } from "../../utils/logger";
 
 // Raycasting: cast one ray per screen column, find wall hit, draw vertical slice.
@@ -21,7 +23,7 @@ export const rayCaster = ({
 	}
 
 	// Ray density (increase for speed, lower quality)
-	const RAY_STEP = 1;
+	const STEP = RAY_STEP;
 
 	// Precompute facing
 	const cosAngle = Math.cos(player.angle);
@@ -31,7 +33,7 @@ export const rayCaster = ({
 	const localDepth = depthBuffer || new Array(screenWidth);
 
 	// For each column
-	for (let x = 0; x < screenWidth; x += RAY_STEP) {
+	for (let x = 0; x < screenWidth; x += STEP) {
 		// Direction for this column (cameraX spans -1..1)
 		const cameraX = (2 * x) / screenWidth - 1;
 		const rayDirX = cosAngle + planeX * cameraX; // forward + lateral spread
@@ -118,7 +120,7 @@ export const rayCaster = ({
 		}
 
 		// Avoid zero
-		if (perpWallDist <= 0) perpWallDist = 0.01;
+	if (perpWallDist <= 0) perpWallDist = MIN_PERP_DISTANCE;
 
 		// Distance -> slice height
 		const wallHeight = Math.floor(screenHeight / perpWallDist);
@@ -134,8 +136,8 @@ export const rayCaster = ({
 		localDepth[x] = perpWallDist;
 
 		// Draw slice
-		context.fillStyle = side === 0 ? "#cccccc" : "#888888"; // Shade side walls
-		context.fillRect(x, wallStart, RAY_STEP, wallEnd - wallStart);
+	context.fillStyle = side === 0 ? WALL_COLOR_LIGHT : WALL_COLOR_DARK;
+	context.fillRect(x, wallStart, STEP, wallEnd - wallStart);
 	}
 
 	return localDepth;

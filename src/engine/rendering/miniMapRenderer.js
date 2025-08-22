@@ -1,4 +1,11 @@
 import { TILE_SIZE } from "../../../gameConfig";
+import {
+	MINIMAP_BG,
+	MINIMAP_WALL,
+	MINIMAP_FLOOR,
+	MINIMAP_MARKER,
+	MINIMAP_OUTLINE,
+} from "../../constants/colors";
 
 // Scrolling minimap (player fixed in center, world scrolls underneath).
 // Shows only a square window of tiles for clarity + performance.
@@ -22,7 +29,7 @@ export const renderMinimap = (context, player, map) => {
 	const minimapY = MINIMAP_MARGIN;
 
 	// Background panel
-	context.fillStyle = "#111";
+	context.fillStyle = MINIMAP_BG;
 	context.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
 	// Constrain all tile draws inside the panel rectangle
@@ -67,7 +74,7 @@ export const renderMinimap = (context, player, map) => {
 			const drawY = minimapY + row * MINIMAP_TILE_SIZE - offsetY;
 
 			// Simple palette: dark = wall, light = walkable
-			context.fillStyle = tileType === 1 ? "#222" : "#fff";
+			context.fillStyle = tileType === 1 ? MINIMAP_WALL : MINIMAP_FLOOR;
 			context.fillRect(drawX, drawY, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
 		}
 	}
@@ -77,20 +84,20 @@ export const renderMinimap = (context, player, map) => {
 
 	// Thin outline
 	context.lineWidth = 2;
-	context.strokeStyle = "black";
+	context.strokeStyle = MINIMAP_OUTLINE;
 	context.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
 	// Player marker (always centered)
 	const centerX = minimapX + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
 	const centerY = minimapY + (VIEWPORT_TILES / 2) * MINIMAP_TILE_SIZE;
 
-	context.fillStyle = "red";
+	context.fillStyle = MINIMAP_MARKER;
 	context.beginPath();
 	context.arc(centerX, centerY, MINIMAP_TILE_SIZE / 2, 0, Math.PI * 2);
 	context.fill();
 
 	// Tiny facing direction line
-	context.strokeStyle = "red";
+	context.strokeStyle = MINIMAP_MARKER;
 	context.beginPath();
 	context.moveTo(centerX, centerY);
 	context.lineTo(

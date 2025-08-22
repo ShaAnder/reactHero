@@ -1,4 +1,5 @@
 import { useReducer } from "react";
+import { createSeededRandom } from "../../utils/rng";
 /**
  * useAppStateMachine
  * Central reducer-powered state: run (config/progress), ui (modals), exit (player on exit tile), meta (timing + lastAction).
@@ -57,7 +58,10 @@ function appStateMachineReducer(state, action) {
 					length: action.length,
 					level: 1,
 					status: RUN_STATUS.IN_PROGRESS,
-					seed: action.seed ?? Math.floor(Math.random() * 1e9),
+					seed:
+						action.seed ??
+						// use a quick non-crypto random if none provided
+						Math.floor(createSeededRandom(Date.now())() * 1e9),
 					mapRevision: 0,
 					startedAt: Date.now(),
 				},

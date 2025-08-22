@@ -91,7 +91,7 @@ const App = () => {
 	const handleCloseOptions = () => actions.setActiveModal(null);
 
 	// Controllers & data
-	const { map, spawn, exit, loading, error, loadNextLevel, world } =
+	const { map, spawn, exit, loading, error, loadNextLevel, world, meta } =
 		useGameController({
 			environment: state.run.environment || DEFAULT_MAP_CONFIG.environment,
 			level: state.run.level, // fed into world bundle
@@ -149,6 +149,7 @@ const App = () => {
 		exit,
 		error,
 		canvas,
+		meta, // pass world meta
 		state,
 		actions,
 		minDuration: 2000,
@@ -295,7 +296,10 @@ const App = () => {
 				<GameOverScreen
 					result="win"
 					setGameState={(next) => {
-						if (next === GAME_STATES.RUN_SETTINGS) {
+						if (
+							next === GAME_STATES.RUN_SETTINGS ||
+							next === GAME_STATES.MAIN_MENU
+						) {
 							actions.resetRun();
 						}
 						setGameState(next);
@@ -304,7 +308,20 @@ const App = () => {
 			);
 			break;
 		case GAME_STATES.LOSS:
-			content = <GameOverScreen result="loss" setGameState={setGameState} />;
+			content = (
+				<GameOverScreen
+					result="loss"
+					setGameState={(next) => {
+						if (
+							next === GAME_STATES.RUN_SETTINGS ||
+							next === GAME_STATES.MAIN_MENU
+						) {
+							actions.resetRun();
+						}
+						setGameState(next);
+					}}
+				/>
+			);
 			break;
 		default:
 			content = null;

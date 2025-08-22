@@ -1,4 +1,5 @@
 import { getBlankMap } from "../../utils/getBlankMap";
+import { CA_WALL_THRESHOLD } from "../../../../../constants/generation";
 
 /*
 HOW THIS FUNCTION WORKS
@@ -32,7 +33,7 @@ export const caStep = (map) => {
 					}
 				}
 			}
-			newMap[y][x] = wallCount > 4 ? 1 : 0;
+			newMap[y][x] = wallCount > CA_WALL_THRESHOLD ? 1 : 0;
 		}
 	}
 	return newMap;

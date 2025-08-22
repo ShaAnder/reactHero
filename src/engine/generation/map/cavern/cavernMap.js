@@ -5,20 +5,30 @@ import { DEFAULT_MAP_CONFIG } from "../../../../../gameConfig";
 import { caStep } from "./cavernUtils/caStep";
 import { log } from "../../../../utils/logger";
 import { getOrCreateRng } from "../../../../utils/rng";
+import {
+	CAVERN_FILL_PROB_DEFAULT,
+	CAVERN_CA_ITERATIONS_DEFAULT,
+	CAVERN_PADDING,
+	CAVERN_SPAWN_SIZE,
+	CAVERN_MAX_ATTEMPTS,
+	CAVERN_FLOORCOUNT_MIN,
+	CAVERN_REACHABLE_MIN,
+	CAVERN_EXIT_MIN_DIST,
+} from "../../../../constants/generation";
 
 // Cavern: noise → smooth → carve spawn → pick distant exit → validate path.
 export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 	// Returns [x,y]; helpers may use [y,x]. Swap when calling them.
 	const dimensions = options.dimensions;
-	const fillProbability = options.fillProbability || 0.45;
-	const iterations = options.caIterations || 5;
-	const padding = 5;
-	const spawnSize = 3;
+	const fillProbability = options.fillProbability || CAVERN_FILL_PROB_DEFAULT;
+	const iterations = options.caIterations || CAVERN_CA_ITERATIONS_DEFAULT;
+	const padding = CAVERN_PADDING;
+	const spawnSize = CAVERN_SPAWN_SIZE;
 
 	let map, start, exit; // outputs
 	let valid = false; // success flag
 	let attempts = 0; // attempt counter
-	const maxAttempts = 60; // cap
+	const maxAttempts = CAVERN_MAX_ATTEMPTS; // cap
 	let lastFloorCount = null; // stats: total floor tiles
 	let lastReachable = null; // stats: reachable floor from spawn
 
@@ -73,7 +83,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 			let floorCount = 0;
 			for (let y = 0; y < dimensions; y++)
 				for (let x = 0; x < dimensions; x++) if (map[y][x] === 0) floorCount++;
-			if (floorCount < 10) {
+			if (floorCount < CAVERN_FLOORCOUNT_MIN) {
 				log.warn(
 					"CavernGen",
 					`Attempt ${attempts}: Too few floor tiles (${floorCount})`
@@ -83,7 +93,7 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 
 			// Reject isolated starts
 			let reachableCount = countReachable(map, start);
-			if (reachableCount < 10) {
+			if (reachableCount < CAVERN_REACHABLE_MIN) {
 				log.warn(
 					"CavernGen",
 					`Attempt ${attempts}: Spawn room is isolated (${reachableCount} reachable)`
@@ -92,7 +102,12 @@ export const generateCavern = (options = DEFAULT_MAP_CONFIG) => {
 			}
 
 			// Pick furthest reachable tile as exit
-			let rawExit = getFurthestFloor(map, [start[1], start[0]], 40);
+			let rawExit = getFurthestFloor(
+				map,
+				[start[1], start[0]],
+				CAVERN_EXIT_MIN_DIST,
+				options
+			);
 			if (!rawExit) {
 				log.warn("CavernGen", `Attempt ${attempts}: Failed to find exit tile`);
 				continue;

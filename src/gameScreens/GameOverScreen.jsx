@@ -8,7 +8,7 @@ const GameOverScreen = ({ result, setGameState }) => (
 		<button className="screen-button" onClick={() => setGameState("main_menu")}>
 			Main Menu
 		</button>
-		<button className="screen-button" onClick={() => setGameState("playing")}>
+		<button className="screen-button" onClick={() => setGameState("run_settings")}>
 			Play Again
 		</button>
 	</div>

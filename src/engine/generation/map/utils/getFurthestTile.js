@@ -3,7 +3,15 @@ HOW THIS FUNCTION WORKS
 Pick a random floor tile at least minDistance away from start. If none qualify,
 fallback to the start itself so callers always receive a valid coordinate.
 */
-export const getFurthestFloor = (map, start, minDistance = 20) => {
+import { getOrCreateRng } from "../../../../utils/rng";
+import { FURTHEST_MIN_DIST_DEFAULT } from "../../../../constants/generation";
+
+export const getFurthestFloor = (
+	map,
+	start,
+	minDistance = FURTHEST_MIN_DIST_DEFAULT,
+	options = {}
+) => {
 	// Start broken into row/col for clarity
 	const [sy, sx] = start;
 
@@ -30,7 +38,8 @@ export const getFurthestFloor = (map, start, minDistance = 20) => {
 
 	// Random pick among candidates
 	if (validTiles.length > 0) {
-		const randomIndex = Math.floor(Math.random() * validTiles.length);
+		const rng = getOrCreateRng(options);
+		const randomIndex = Math.floor(rng() * validTiles.length);
 		return validTiles[randomIndex];
 	}
 

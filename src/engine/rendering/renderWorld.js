@@ -7,6 +7,9 @@ import { DEBUG_FLAGS } from "../../constants/debugConfig";
 import { timeSection } from "../../utils/profiling";
 import { log } from "../../utils/logger";
 import { FOV_ANGLE, TILE_SIZE } from "../../../gameConfig";
+import { TWO_PI, EPSILON_DIST } from "../../constants/math";
+import { MIN_ENTITY_SIZE_PX } from "../../constants/rendering";
+import { ENTITY_DEBUG_COLOR } from "../../constants/colors";
 
 /**
  * renderEntities
@@ -30,13 +33,13 @@ function renderEntities(ctx, world, opts) {
 		const dx = e.x - player.x;
 		const dy = e.y - player.y;
 		const dist = Math.hypot(dx, dy);
-		if (dist < 0.001) continue; // avoid divide by ~0
+		if (dist < EPSILON_DIST) continue; // avoid divide by ~0
 
 		// Angle between player facing and entity direction (normalize to -π..π)
 		let angleTo = Math.atan2(dy, dx);
 		let diff = angleTo - player.angle;
-		while (diff > Math.PI) diff -= Math.PI * 2;
-		while (diff < -Math.PI) diff += Math.PI * 2;
+		while (diff > Math.PI) diff -= TWO_PI;
+		while (diff < -Math.PI) diff += TWO_PI;
 		if (Math.abs(diff) > halfFov) continue; // outside view cone
 
 		// Convert angular offset → screen column (0..width)
@@ -47,14 +50,14 @@ function renderEntities(ctx, world, opts) {
 		// clamp a min + cap to screen height
 		const size = Math.min(
 			screenH,
-			Math.max(4, Math.floor((TILE_SIZE * screenH) / dist / 2))
+			Math.max(MIN_ENTITY_SIZE_PX, Math.floor((TILE_SIZE * screenH) / dist / 2))
 		);
 		const top = Math.floor(screenH / 2 - size / 2);
 
 		// Simple occlusion: if wall at that column is nearer, skip
 		if (depth && depth[screenX] && depth[screenX] < dist) continue;
 
-		ctx.fillStyle = e.color || "#ff0";
+	ctx.fillStyle = e.color || ENTITY_DEBUG_COLOR;
 		ctx.fillRect(screenX - size / 2, top, size, size);
 	}
 }

@@ -1,6 +1,7 @@
 // hudRenderer.js
 // Draws a simple diagnostic HUD (level, time, fps, generation stats)
 // Called after 3D + minimap so it overlays cleanly.
+import { HUD_TEXT_RGBA } from "../../constants/colors";
 
 export function renderHUD(ctx, world, fps) {
 	if (!ctx || !world) return;
@@ -8,7 +9,7 @@ export function renderHUD(ctx, world, fps) {
 	ctx.save();
 	ctx.font = "12px monospace";
 	ctx.textBaseline = "top";
-	ctx.fillStyle = "rgba(255,255,255,0.92)";
+	ctx.fillStyle = HUD_TEXT_RGBA;
 	let y = 6;
 	ctx.fillText(
 		`L${level ?? "?"}  t:${time.toFixed(1)}s  fps:${fps ?? "?"} `,

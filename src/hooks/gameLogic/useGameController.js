@@ -1,8 +1,10 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { generateMap } from "../../engine/generation/map/createDungeon"; // map dispatcher
 import { DEBUG_FLAGS } from "../../constants/debugConfig";
 import { TILE_SIZE } from "../../../gameConfig";
 import { DEFAULT_MAP_CONFIG } from "../../../gameConfig"; // defaults
+import { TILE_CENTER_OFFSET } from "../../constants/rendering";
+import { ENTITY_DEBUG_COLOR } from "../../constants/colors";
 
 /**
  * useGameController
@@ -29,6 +31,17 @@ export const useGameController = ({ environment, level }) => {
 
 	// Generate a new map + spawn + exit
 
+	// Invalidate current world immediately when env/level changes.
+	// Prevents LOADING->PLAYING from seeing stale map/spawn/exit.
+	useEffect(() => {
+		setMap(null);
+		setSpawn(null);
+		setExit(null);
+		setMeta(null);
+		setError(null);
+		setLoading(true);
+	}, [environment, level]);
+
 	const loadNextLevel = useCallback(async () => {
 		setLoading(true);
 		setError(null);
@@ -39,10 +52,13 @@ export const useGameController = ({ environment, level }) => {
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			const preset = DEFAULT_MAP_CONFIG.environmentPresets[environment];
 
+			// Derive a per-level seed so each level differs even if base seed is constant
+			const levelSeed = `${environment}:${level}:${Date.now()}`;
 			const config = {
 				...DEFAULT_MAP_CONFIG,
 				...preset,
 				environment,
+				seed: levelSeed,
 				walkerPresets: preset.walkerPresets,
 			};
 
@@ -62,7 +78,7 @@ export const useGameController = ({ environment, level }) => {
 			setError(err.message || "Failed to generate map");
 			setLoading(false);
 		}
-	}, [environment]);
+	}, [environment, level]);
 
 	// NOTE: No automatic map generation on mount. Call loadNextLevel() from your app logic when needed.
 
@@ -75,9 +91,9 @@ export const useGameController = ({ environment, level }) => {
 			entities.push({
 				id: "exit-marker",
 				type: "marker",
-				x: (exit[0] + 0.5) * TILE_SIZE,
-				y: (exit[1] + 0.5) * TILE_SIZE,
-				color: "#ff3366",
+				x: (exit[0] + TILE_CENTER_OFFSET) * TILE_SIZE,
+				y: (exit[1] + TILE_CENTER_OFFSET) * TILE_SIZE,
+				color: ENTITY_DEBUG_COLOR,
 			});
 		}
 		return { map, spawn, exit, level, meta, entities };

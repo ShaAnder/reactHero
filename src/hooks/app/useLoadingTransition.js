@@ -18,6 +18,7 @@ export function useLoadingTransition({
 	exit,
 	error,
 	canvas,
+	meta,
 	state,
 	actions,
 	minDuration = 2000,
@@ -56,6 +57,10 @@ export function useLoadingTransition({
 		if (gameState !== GAME_STATES.LOADING) return;
 		if (loading || !map || !spawn || !exit || error) return;
 		if (!state.meta.loadingStartAt) return; // safety
+		// Ensure we're not reusing a previous world's map/spawn/exit.
+		// Only proceed once the generated world is newer than the current loading start.
+		if (!meta || !meta.generatedAt || meta.generatedAt < state.meta.loadingStartAt)
+			return;
 
 		const elapsed = Date.now() - state.meta.loadingStartAt;
 		const doPlay = () => {
@@ -82,6 +87,7 @@ export function useLoadingTransition({
 		exit,
 		error,
 		state.meta.loadingStartAt,
+		meta,
 		canvas,
 		actions,
 		setGameState,
